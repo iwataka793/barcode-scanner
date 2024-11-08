@@ -43,6 +43,7 @@
             width: 90%;
             max-width: 600px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            word-break: break-word; /* テキストの改行を許可 */
         }
         #scanButton {
             margin-top: 20px;
@@ -78,10 +79,6 @@
             resultDiv.style.display = 'block';
             // 背景色を赤に変更
             document.body.style.backgroundColor = 'red';
-            setTimeout(() => { 
-                resultDiv.style.display = 'none'; 
-                document.body.style.backgroundColor = '#f0f0f0'; // 元の色に戻す
-            }, 5000);
         };
 
         // 商品データのパターン定義
@@ -102,11 +99,13 @@
 
             // 背景色を変更
             document.body.style.backgroundColor = color;
+        }
 
-            setTimeout(() => { 
-                resultDiv.style.display = 'none'; 
-                document.body.style.backgroundColor = '#f0f0f0'; // 元の色に戻す
-            }, 3000);
+        // 結果と背景色をクリアする関数
+        function clearResult() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.style.display = 'none';
+            document.body.style.backgroundColor = '#f0f0f0'; // 元の色に戻す
         }
 
         // バーコードの分類関数
@@ -122,6 +121,9 @@
         // スキャンの開始
         function startScanner() {
             if (isScanning) return;
+
+            // 結果と背景色をクリア
+            clearResult();
 
             Quagga.init({
                 inputStream: {
@@ -172,10 +174,10 @@
                 } else {
                     if (previousProduct !== null) {
                         // 異なる商品を読み取った場合は緑色に変更
-                        showResult(`OK: ${previousProduct} → ${product}`, 'green');
+                        showResult(`OK: ${previousProduct} → ${product}`, '#28a745'); // 緑色を鮮やかに変更
                     } else {
                         // 最初のスキャンの場合
-                        showResult(`検出: ${product}`, 'blue');
+                        showResult(`検出: ${product}`, '#007BFF'); // 初期検出時は青色
                     }
                 }
                 previousProduct = product;
@@ -195,7 +197,7 @@
         });
 
         // 初期状態ではスキャン停止
-        stopScanner();
+        clearResult();
     </script>
 </body>
 </html>
