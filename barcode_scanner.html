@@ -2,126 +2,169 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>バーコードスキャナー</title>
+    <title>オフラインバーコードスキャナー</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body, html {
             margin: 0;
             padding: 0;
             height: 100%;
-            font-family: Arial, sans-serif;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background-color: #f0f0f0; /* 初期状態 */
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
-            background-color: #f0f0f0;
-            overflow: hidden;
         }
-        #container {
+        #interactive {
             position: relative;
             width: 90%;
             max-width: 600px;
             aspect-ratio: 4 / 3;
-            background-color: black;
+            background: #000;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
         }
-        #interactive {
-            width: 100%;
-            height: 100%;
-        }
-        #line {
-            position: absolute;
-            top: 50%;
-            left: 0;
-            width: 100%;
-            height: 2px;
-            background-color: red;
-            z-index: 10;
-            pointer-events: none; /* クリックなどのイベントを無視 */
-            transform: translateY(-1px);
-        }
-        #message {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2em;
+        #result {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 10px;
             color: white;
-            z-index: 9999;
+            font-size: 1.5em;
+            font-weight: bold;
+            text-align: center;
             display: none;
         }
+        #scanButton {
+            margin-top: 20px;
+            padding: 15px 30px;
+            font-size: 1.2em;
+            border: none;
+            border-radius: 10px;
+            background-color: #007BFF;
+            color: white;
+            cursor: pointer;
+        }
     </style>
+    <!-- QuaggaJSのCDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
 </head>
 <body>
-    <div id="container">
-        <div id="interactive"></div>
-        <div id="line"></div> <!-- 照準用の横一線 -->
-    </div>
-    <div id="message"></div>
+    <div id="interactive" class="viewport"></div>
+    <div id="result"></div>
+    <button id="scanButton">スキャン開始</button>
 
     <script>
-        const patterns = {
-            "X-92-122": "5863S",
-            "PLR－2": "GFEYS"
+        // 商品データのパターン定義
+        const productPatterns = {
+            "商品1": "5863S",
+            "商品2": "GFEYS"
         };
 
-        let previousResult = null;
-        const messageDiv = document.getElementById('message');
+        let previousProduct = null;
+        let isScanning = false;
 
-        function setMessage(text, color) {
-            messageDiv.textContent = text;
-            messageDiv.style.backgroundColor = color;
-            messageDiv.style.display = 'flex';
-            setTimeout(() => { messageDiv.style.display = 'none'; }, 2000);
+        const body = document.body;
+
+        // 結果表示用の関数
+        function showResult(message, color) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.textContent = message;
+            body.style.backgroundColor = color;
+            resultDiv.style.display = 'block';
+            setTimeout(() => { resultDiv.style.display = 'none'; }, 2000);
         }
 
-        function classifyProduct(code) {
-            for (let key in patterns) {
-                if (code.includes(patterns[key])) return key;
+        // バーコードの分類関数
+        function classifyProduct(barcode) {
+            for (let product in productPatterns) {
+                if (barcode.includes(productPatterns[product])) {
+                    return product;
+                }
             }
             return null;
         }
 
-        // QuaggaJSの初期化
-        Quagga.init({
-            inputStream: {
-                name: "Live",
-                type: "LiveStream",
-                target: document.querySelector('#interactive'),
-                constraints: {
-                    facingMode: "environment"
-                }
-            },
-            decoder: {
-                readers: ["code_128_reader"]
-            }
-        }, err => {
-            if (err) {
-                console.error(err);
-                return;
-            }
-            Quagga.start();
-        });
+        // スキャンの開始
+        function startScanner() {
+            if (isScanning) return;
 
-        // バーコード検出時の処理
-        Quagga.onDetected(result => {
-            const code = result.codeResult.code;
-            const product = classifyProduct(code);
+            Quagga.init({
+                inputStream: {
+                    name: "Live",
+                    type: "LiveStream",
+                    target: document.querySelector('#interactive'),
+                    constraints: {
+                        facingMode: "environment" // 背面カメラを使用
+                    },
+                },
+                decoder: {
+                    readers: ["code_128_reader"]
+                },
+            }, function(err) {
+                if (err) {
+                    console.error(err);
+                    alert("バーコードスキャナーの初期化に失敗しました。");
+                    return;
+                }
+                Quagga.start();
+                isScanning = true;
+                body.style.backgroundColor = '#f0f0f0'; // カメラ起動時の背景色
+                document.getElementById('scanButton').textContent = "スキャン停止";
+            });
+
+            Quagga.onDetected(onDetected);
+        }
+
+        // スキャンの停止
+        function stopScanner() {
+            if (!isScanning) return;
+
+            Quagga.stop();
+            isScanning = false;
+            document.getElementById('scanButton').textContent = "スキャン開始";
+            Quagga.offDetected(onDetected);
+            body.style.backgroundColor = '#f0f0f0'; // スキャン停止時の背景色
+        }
+
+        // スキャン結果の処理
+        function onDetected(data) {
+            const barcode = data.codeResult.code;
+            console.log("検出されたバーコード:", barcode);
+            const product = classifyProduct(barcode);
 
             if (product) {
-                if (product === previousResult) {
-                    setMessage(`重複: ${product}`, 'red');
+                if (product === previousProduct) {
+                    // 同じ商品を2回読み取った場合
+                    showResult(`NG: ${product} を重複して読み取りました`, 'red');
                 } else {
-                    setMessage(`OK: ${product}`, 'green');
+                    if (previousProduct !== null) {
+                        // 異なる商品を読み取った場合
+                        showResult(`OK: ${previousProduct} → ${product}`, 'green');
+                    } else {
+                        // 最初のスキャンの場合
+                        showResult(`検出: ${product}`, 'green');
+                    }
                 }
-                previousResult = product;
+                previousProduct = product;
             } else {
-                setMessage("認識できません", 'gray');
+                // バーコードが認識できない場合は赤色に変更
+                showResult("バーコードが認識できません", 'red');
+            }
+        }
+
+        // ボタンのイベントリスナー
+        document.getElementById('scanButton').addEventListener('click', function() {
+            if (isScanning) {
+                stopScanner();
+            } else {
+                startScanner();
             }
         });
+
+        // 初期状態ではスキャン停止
+        stopScanner();
     </script>
 </body>
 </html>
