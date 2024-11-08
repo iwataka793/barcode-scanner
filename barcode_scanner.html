@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>モダンバーコードスキャナー</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background-color: #f0f0f0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        #interactive.viewport {
+            position: relative;
+            width: 90%;
+            max-width: 600px;
+            aspect-ratio: 4 / 3;
+            background: #000;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        #result {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 10px;
+            color: white;
+            font-size: 1.5em;
+            font-weight: bold;
+            display: none;
+            text-align: center;
+            width: 90%;
+            max-width: 600px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        #scanButton {
+            margin-top: 20px;
+            padding: 15px 30px;
+            font-size: 1.2em;
+            border: none;
+            border-radius: 10px;
+            background-color: #007BFF;
+            color: white;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            transition: background-color 0.3s ease;
+        }
+        #scanButton:hover {
+            background-color: #0056b3;
+        }
+    </style>
+    <!-- QuaggaJSのCDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+</head>
+<body>
+    <h1>バーコードスキャナー</h1>
+    <div id="interactive" class="viewport"></div>
+    <div id="result"></div>
+    <button id="scanButton">スキャン開始</button>
+
+    <script>
+        // エラーハンドリング: エラーを画面に表示
+        window.onerror = function(message, source, lineno, colno, error) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.style.backgroundColor = 'black';
+            resultDiv.style.color = 'red';
+            resultDiv.textContent = `エラー: ${message} at ${source}:${lineno}:${colno}`;
+            resultDiv.style.display = 'block';
+            setTimeout(() => { resultDiv.style.display = 'none'; }, 5000);
+        };
+
+        // 商品データのパターン定義
+        const productPatterns = {
+            "商品1": "5863S",
+            "商品2": "GFEYS"
+        };
+
+        let previousProduct = null;
+        let isScanning = false;
+
+        // 結果表示用の関数
+        function showResult(message, color) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.style.backgroundColor = color;
+            resultDiv.textContent = message;
+            resultDiv.style.display = 'block';
+            setTimeout(() => { resultDiv.style.display = 'none'; }, 3000);
+        }
+
+        // バーコードの分類関数
+        function classifyProduct(barcode) {
+            for (let product in productPatterns) {
+                if (barcode.includes(productPatterns[product])) {
+                    return product;
+                }
+            }
+            return null;
+        }
+
+        // スキャンの開始
+        function startScanner() {
+            if (isScanning) return;
+
+            Quagga.init({
+                inputStream: {
+                    name: "Live",
+                    type: "LiveStream",
+                    target: document.querySelector('#interactive'),
+                    constraints: {
+                        facingMode: "environment" // 背面カメラを使用
+                    },
+                },
+                decoder: {
+                    readers: ["code_128_reader"] // Code 128を指定
+                },
+            }, function(err) {
+                if (err) {
+                    console.error(err);
+                    alert("バーコードスキャナーの初期化に失敗しました。");
+                    return;
+                }
+                Quagga.start();
+                isScanning = true;
+                document.getElementById('scanButton').textContent = "スキャン停止";
+            });
+
+            Quagga.onDetected(onDetected);
+        }
+
+        // スキャンの停止
+        function stopScanner() {
+            if (!isScanning) return;
+
+            Quagga.stop();
+            isScanning = false;
+            document.getElementById('scanButton').textContent = "スキャン開始";
+            Quagga.offDetected(onDetected);
+        }
+
+        // スキャン結果の処理
+        function onDetected(data) {
+            const barcode = data.codeResult.code;
+            console.log("検出されたバーコード:", barcode);
+            const product = classifyProduct(barcode);
+
+            if (product) {
+                if (product === previousProduct) {
+                    // 同じ商品を2回読み取った場合は赤色に変更
+                    showResult(`NG: ${product} を重複して読み取りました`, 'red');
+                } else {
+                    if (previousProduct !== null) {
+                        // 異なる商品を読み取った場合は緑色に変更
+                        showResult(`OK: ${previousProduct} → ${product}`, 'green');
+                    } else {
+                        // 最初のスキャンの場合
+                        showResult(`検出: ${product}`, 'blue');
+                    }
+                }
+                previousProduct = product;
+                stopScanner(); // スキャン後に停止
+            } else {
+                showResult("バーコードが認識できません", 'gray');
+            }
+        }
+
+        // ボタンのイベントリスナー
+        document.getElementById('scanButton').addEventListener('click', function() {
+            if (isScanning) {
+                stopScanner();
+            } else {
+                startScanner();
+            }
+        });
+
+        // 初期状態ではスキャン停止
+        stopScanner();
+    </script>
+</body>
+</html>
