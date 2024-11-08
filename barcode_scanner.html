@@ -16,13 +16,16 @@
             background-color: #f0f0f0;
             overflow: hidden;
         }
-        #interactive {
+        #container {
             position: relative;
             width: 90%;
             max-width: 600px;
             aspect-ratio: 4 / 3;
             background-color: black;
-            overflow: hidden;
+        }
+        #interactive {
+            width: 100%;
+            height: 100%;
         }
         #line {
             position: absolute;
@@ -32,7 +35,8 @@
             height: 2px;
             background-color: red;
             z-index: 10;
-            transform: translateY(-50%);
+            pointer-events: none; /* クリックなどのイベントを無視 */
+            transform: translateY(-1px);
         }
         #message {
             position: fixed;
@@ -52,8 +56,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
 </head>
 <body>
-    <div id="interactive">
-        <div id="line"></div> <!-- 横一線の照準ライン -->
+    <div id="container">
+        <div id="interactive"></div>
+        <div id="line"></div> <!-- 照準用の横一線 -->
     </div>
     <div id="message"></div>
 
@@ -66,7 +71,6 @@
         let previousResult = null;
         const messageDiv = document.getElementById('message');
 
-        // メッセージ表示用関数
         function setMessage(text, color) {
             messageDiv.textContent = text;
             messageDiv.style.backgroundColor = color;
@@ -74,7 +78,6 @@
             setTimeout(() => { messageDiv.style.display = 'none'; }, 2000);
         }
 
-        // バーコードの分類関数
         function classifyProduct(code) {
             for (let key in patterns) {
                 if (code.includes(patterns[key])) return key;
@@ -89,11 +92,11 @@
                 type: "LiveStream",
                 target: document.querySelector('#interactive'),
                 constraints: {
-                    facingMode: "environment" // 背面カメラを使用
+                    facingMode: "environment"
                 }
             },
             decoder: {
-                readers: ["code_128_reader"] // Code 128バーコードリーダーを使用
+                readers: ["code_128_reader"]
             }
         }, err => {
             if (err) {
@@ -109,7 +112,6 @@
             const product = classifyProduct(code);
 
             if (product) {
-                // 同じ商品を2回連続で読み取った場合
                 if (product === previousResult) {
                     setMessage(`重複: ${product}`, 'red');
                 } else {
