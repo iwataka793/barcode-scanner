@@ -170,7 +170,7 @@
             if (product) {
                 if (product === previousProduct) {
                     // 同じ商品を2回読み取った場合は赤色に変更
-                    showResult(`NG: ${product} を重複して読み取りました`, 'red');
+                    showResult(`NG: ${product} が重複しました`, 'red');
                 } else {
                     if (previousProduct !== null) {
                         // 異なる商品を読み取った場合は緑色に変更
