@@ -15,6 +15,7 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
+            transition: background-color 0.5s ease; /* 背景色変更のアニメーション */
         }
         h1 {
             text-align: center;
@@ -72,11 +73,15 @@
         // エラーハンドリング: エラーを画面に表示
         window.onerror = function(message, source, lineno, colno, error) {
             const resultDiv = document.getElementById('result');
-            resultDiv.style.backgroundColor = 'black';
-            resultDiv.style.color = 'red';
+            resultDiv.style.backgroundColor = 'red'; // エラー時は赤色
             resultDiv.textContent = `エラー: ${message} at ${source}:${lineno}:${colno}`;
             resultDiv.style.display = 'block';
-            setTimeout(() => { resultDiv.style.display = 'none'; }, 5000);
+            // 背景色を赤に変更
+            document.body.style.backgroundColor = 'red';
+            setTimeout(() => { 
+                resultDiv.style.display = 'none'; 
+                document.body.style.backgroundColor = '#f0f0f0'; // 元の色に戻す
+            }, 5000);
         };
 
         // 商品データのパターン定義
@@ -94,7 +99,14 @@
             resultDiv.style.backgroundColor = color;
             resultDiv.textContent = message;
             resultDiv.style.display = 'block';
-            setTimeout(() => { resultDiv.style.display = 'none'; }, 3000);
+
+            // 背景色を変更
+            document.body.style.backgroundColor = color;
+
+            setTimeout(() => { 
+                resultDiv.style.display = 'none'; 
+                document.body.style.backgroundColor = '#f0f0f0'; // 元の色に戻す
+            }, 3000);
         }
 
         // バーコードの分類関数
