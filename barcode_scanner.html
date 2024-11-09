@@ -120,8 +120,8 @@
 
         // 商品データのパターン定義
         const productPatterns = {
-            "X-92-122": "5863S",
-            "PLR-2": "GFEYS"
+            "5863S": "X-92-122",
+            "GFEYS": "PLR-2"
             // 必要に応じてパターンを追加
         };
 
@@ -146,14 +146,21 @@
             document.body.style.backgroundColor = '#f0f0f0'; // 元の色に戻す
         }
 
-        // バーコードの分類関数
-        function classifyProduct(barcode) {
-            for (let product in productPatterns) {
-                if (barcode.includes(productPatterns[product])) {
-                    return product;
-                }
+        // バーコードの特定位置からセグメントを抽出する関数
+        function extractImportantSegment(barcode) {
+            // 左から4番目からの5桁を抽出（インデックスは0から開始）
+            if (barcode.length >= 8) { // 最低限必要な長さをチェック
+                return barcode.substring(3, 8); // インデックス3から7まで（5文字）
             }
             return null;
+        }
+
+        // バーコードの分類関数
+        function classifyProduct(barcode) {
+            const segment = extractImportantSegment(barcode);
+            if (!segment) return null; // セグメントが抽出できない場合はnullを返す
+
+            return productPatterns[segment] || null; // マッピングが存在すれば返す
         }
 
         // スキャンの開始
@@ -162,6 +169,7 @@
 
             // 結果と背景色をクリア
             clearResult();
+            previousProduct = null; // 前回の製品をリセット
 
             Quagga.init({
                 inputStream: {
