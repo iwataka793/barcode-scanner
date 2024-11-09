@@ -98,8 +98,8 @@
 
         // 商品データのパターン定義
         const productPatterns = {
-            "X-92-122": "5863S",
-            "PLR-2": "GFEYS"
+            "5863S": "X-92-122",
+            "GFEYS": "PLR-2"
             // 必要に応じてパターンを追加
         };
 
@@ -127,9 +127,9 @@
 
         // バーコードの分類関数
         function classifyProduct(barcode) {
-            for (let product in productPatterns) {
-                if (barcode.includes(productPatterns[product])) {
-                    return product;
+            for (let pattern in productPatterns) {
+                if (barcode.includes(pattern)) {
+                    return productPatterns[pattern];
                 }
             }
             return null;
@@ -223,7 +223,7 @@
                         stopScanner();
                     }, 2000); // 2秒後にリセット
                 } else {
-                    // 1回目のスキャン後、次のスキャンを続けるためにスキャナーを再開
+                    // 1回目のスキャン後、次のスキャンを続けるためにスキャナーを停止
                     stopScanner();
                 }
             } else {
@@ -237,7 +237,7 @@
                         stopScanner();
                     }, 2000); // 2秒後にリセット
                 } else {
-                    // 1回目のスキャン後、次のスキャンを続けるためにスキャナーを再開
+                    // 1回目のスキャン後、次のスキャンを続けるためにスキャナーを停止
                     stopScanner();
                 }
             }
