@@ -252,6 +252,7 @@
         document.getElementById('resetButton').addEventListener('click', function() {
             clearResult();
             previousProduct = null;
+            startScanner(); // リセット後にスキャンを自動開始
         });
 
         // 初期状態ではスキャン停止
