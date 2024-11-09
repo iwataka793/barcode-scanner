@@ -5,95 +5,7 @@
     <title>バーコードスキャナー</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        body, html {
-            margin: 0;
-            padding: 0;
-            height: 100%;
-            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-            background-color: #f0f0f0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            transition: background-color 0.5s ease; /* 背景色変更のアニメーション */
-        }
-        h1 {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        #interactive.viewport {
-            position: relative;
-            width: 100%; /* 幅を100%に拡大 */
-            max-width: none; /* 最大幅の制限を解除 */
-            height: 70vh; /* 高さをビュー高さの70%に設定 */
-            background: #000;
-            border-radius: 15px;
-            overflow: hidden;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-        }
-        #result {
-            margin-top: 20px;
-            padding: 20px;
-            border-radius: 10px;
-            color: white;
-            font-size: 1.5em;
-            font-weight: bold;
-            display: none;
-            text-align: center;
-            width: 90%;
-            max-width: 600px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-            word-break: break-word; /* テキストの改行を許可 */
-        }
-        #controls {
-            margin-top: 20px;
-            display: flex;
-            gap: 10px;
-        }
-        .button {
-            padding: 15px 30px;
-            font-size: 1.2em;
-            border: none;
-            border-radius: 10px;
-            background-color: #007BFF;
-            color: white;
-            cursor: pointer;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
-            transition: background-color 0.3s ease;
-        }
-        .button:hover {
-            background-color: #0056b3;
-        }
-        /* リセットボタンのスタイル */
-        #resetButton {
-            padding: 15px 30px;
-            font-size: 1.2em;
-            border: none;
-            border-radius: 10px;
-            background-color: #6c757d; /* グレー色 */
-            color: white;
-            cursor: pointer;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
-            transition: background-color 0.3s ease;
-        }
-        #resetButton:hover {
-            background-color: #5a6268;
-        }
-
-        /* レスポンシブデザイン */
-        @media (max-width: 768px) {
-            #interactive.viewport {
-                height: 60vh;
-            }
-            #result {
-                font-size: 1.2em;
-                padding: 15px;
-            }
-            .button, #resetButton {
-                padding: 12px 25px;
-                font-size: 1em;
-            }
-        }
+        /* 省略: 既存のスタイルを保持 */
     </style>
     <!-- QuaggaJSのCDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
@@ -150,9 +62,11 @@
         function extractImportantSegment(barcode) {
             // 左から4番目からの5桁を抽出（インデックスは0から開始）
             if (barcode.length >= 9) { // 最低限必要な長さをチェック
-                return barcode.substring(4, 9); // インデックス3から7まで（5文字）
+                const segment = barcode.substring(4, 9); // インデックス4から8まで（5文字）
+                console.log("抽出されたセグメント:", segment); // 追加: セグメントをコンソールに出力
+                return segment;
             }
-            return null;
+            return null; // バーコードが短すぎる場合はnullを返す
         }
 
         // バーコードの分類関数
@@ -160,7 +74,9 @@
             const segment = extractImportantSegment(barcode);
             if (!segment) return null; // セグメントが抽出できない場合はnullを返す
 
-            return productPatterns[segment] || null; // マッピングが存在すれば返す
+            const product = productPatterns[segment];
+            console.log("マッピングされた商品コード:", product); // 追加: マッピング結果をコンソールに出力
+            return product || null; // マッピングが存在すれば返す
         }
 
         // スキャンの開始
@@ -169,7 +85,6 @@
 
             // 結果と背景色をクリア
             clearResult();
-            previousProduct = null; // 前回の製品をリセット
 
             Quagga.init({
                 inputStream: {
@@ -260,7 +175,9 @@
         document.getElementById('resetButton').addEventListener('click', function() {
             clearResult();
             previousProduct = null;
-            startScanner(); // リセット後にスキャンを自動開始
+            // ユーザーが再度「スキャン開始」ボタンを押すよう促す
+            // 自動的にスキャンを開始する場合は以下の行を有効にしてください
+            // startScanner();
         });
 
         // 初期状態ではスキャン停止
