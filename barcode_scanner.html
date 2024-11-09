@@ -140,6 +140,7 @@
 
             // 結果と背景色をクリア
             clearResult();
+            previousProduct = null; // 前回の製品をリセット
 
             Quagga.init({
                 inputStream: {
@@ -200,20 +201,21 @@
             if (product) {
                 if (product === previousProduct) {
                     // 同じ商品を2回読み取った場合は赤色に変更
-                    showResult(`NG: ${product} を重複して読み取りました  ${barcode}`, 'red');
+                    showResult(`NG: ${product} を重複して読み取りました (バーコード: ${barcode})`, 'red');
                 } else {
                     if (previousProduct !== null) {
                         // 異なる商品を読み取った場合は緑色に変更
-                        showResult(`OK: ${previousProduct} → ${product}  ${barcode}`, '#28a745'); // 緑色を鮮やかに変更
+                        showResult(`OK: ${previousProduct} → ${product} (バーコード: ${barcode})`, '#28a745'); // 緑色を鮮やかに変更
                     } else {
                         // 最初のスキャンの場合
-                        showResult(`検出: ${product}  ${barcode}`, '#007BFF'); // 初期検出時は青色
+                        showResult(`検出: ${product} (バーコード: ${barcode})`, '#007BFF'); // 初期検出時は青色
                     }
                 }
                 previousProduct = product;
                 stopScanner(); // スキャン後に停止
             } else {
                 showResult(`バーコードが認識できません (バーコード: ${barcode})`, 'gray');
+                stopScanner(); // 認識できなかった場合も停止
             }
         }
 
