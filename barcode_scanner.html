@@ -105,6 +105,7 @@
 
         let previousProduct = null;
         let isScanning = false;
+        let scanCount = 0; // スキャン回数をカウント
 
         // 結果表示用の関数
         function showResult(message, color) {
@@ -141,6 +142,7 @@
             // 結果と背景色をクリア
             clearResult();
             previousProduct = null; // 前回の製品をリセット
+            scanCount = 0; // スキャンカウントをリセット
 
             Quagga.init({
                 inputStream: {
@@ -212,10 +214,32 @@
                     }
                 }
                 previousProduct = product;
-                stopScanner(); // スキャン後に停止
+                scanCount += 1; // スキャンカウントをインクリメント
+
+                // 2回スキャンされたらリセット
+                if (scanCount >= 2) {
+                    setTimeout(() => {
+                        clearResult();
+                        stopScanner();
+                    }, 2000); // 2秒後にリセット
+                } else {
+                    // 1回目のスキャン後、次のスキャンを続けるためにスキャナーを再開
+                    stopScanner();
+                }
             } else {
                 showResult(`バーコードが認識できません (バーコード: ${barcode})`, 'gray');
-                stopScanner(); // 認識できなかった場合も停止
+                scanCount += 1; // スキャンカウントをインクリメント
+
+                // 2回スキャンされたらリセット
+                if (scanCount >= 2) {
+                    setTimeout(() => {
+                        clearResult();
+                        stopScanner();
+                    }, 2000); // 2秒後にリセット
+                } else {
+                    // 1回目のスキャン後、次のスキャンを続けるためにスキャナーを再開
+                    stopScanner();
+                }
             }
         }
 
