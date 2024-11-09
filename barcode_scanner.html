@@ -45,8 +45,12 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.3);
             word-break: break-word; /* テキストの改行を許可 */
         }
-        #scanButton {
+        #controls {
             margin-top: 20px;
+            display: flex;
+            gap: 10px;
+        }
+        .button {
             padding: 15px 30px;
             font-size: 1.2em;
             border: none;
@@ -57,7 +61,7 @@
             box-shadow: 0 4px 6px rgba(0,0,0,0.2);
             transition: background-color 0.3s ease;
         }
-        #scanButton:hover {
+        .button:hover {
             background-color: #0056b3;
         }
 
@@ -70,7 +74,7 @@
                 font-size: 1.2em;
                 padding: 15px;
             }
-            #scanButton {
+            .button {
                 padding: 12px 25px;
                 font-size: 1em;
             }
@@ -83,7 +87,10 @@
     <h1>バーコードスキャナー</h1>
     <div id="interactive" class="viewport"></div>
     <div id="result"></div>
-    <button id="scanButton">スキャン開始</button>
+    <div id="controls">
+        <button id="scanButton" class="button">スキャン開始</button>
+        <button id="resetButton" class="button">リセット</button>
+    </div>
 
     <script>
         // エラーハンドリング: エラーを画面に表示
@@ -103,9 +110,8 @@
             // 必要に応じてパターンを追加
         };
 
-        let previousProduct = null;
+        let scannedProducts = []; // スキャンされた商品を保持する配列
         let isScanning = false;
-        let scanCount = 0; // スキャン回数をカウント
 
         // 結果表示用の関数
         function showResult(message, color) {
@@ -141,8 +147,7 @@
 
             // 結果と背景色をクリア
             clearResult();
-            previousProduct = null; // 前回の製品をリセット
-            scanCount = 0; // スキャンカウントをリセット
+            scannedProducts = []; // スキャンされた商品リストをリセット
 
             Quagga.init({
                 inputStream: {
@@ -151,7 +156,7 @@
                     target: document.querySelector('#interactive'),
                     constraints: {
                         facingMode: "environment", // 背面カメラを使用
-                        width: { ideal: 1280 }, // 解像度を下げる（理想値）
+                        width: { ideal: 1280 }, // 解像度を設定
                         height: { ideal: 720 }
                     },
                     area: { // カメラの処理領域を指定
@@ -201,54 +206,70 @@
             const product = classifyProduct(barcode);
 
             if (product) {
-                if (product === previousProduct) {
-                    // 同じ商品を2回読み取った場合は赤色に変更
-                    showResult(`NG: ${product} を重複して読み取りました (バーコード: ${barcode})`, 'red');
-                } else {
-                    if (previousProduct !== null) {
-                        // 異なる商品を読み取った場合は緑色に変更
-                        showResult(`OK: ${previousProduct} → ${product} (バーコード: ${barcode})`, '#28a745'); // 緑色を鮮やかに変更
-                    } else {
-                        // 最初のスキャンの場合
-                        showResult(`検出: ${product} (バーコード: ${barcode})`, '#007BFF'); // 初期検出時は青色
-                    }
-                }
-                previousProduct = product;
-                scanCount += 1; // スキャンカウントをインクリメント
+                scannedProducts.push(product);
+                console.log("スキャンされた商品:", scannedProducts);
 
-                // 2回スキャンされたらリセット
-                if (scanCount >= 2) {
+                if (scannedProducts.length === 2) {
+                    if (scannedProducts[0] === scannedProducts[1]) {
+                        // 同じ商品を2回スキャン
+                        showResult(`NG: ${product} を重複して読み取りました (バーコード: ${barcode})`, 'red');
+                    } else {
+                        // 異なる商品をスキャン
+                        showResult(`OK: ${scannedProducts[0]} → ${scannedProducts[1]} (バーコード: ${barcode})`, '#28a745');
+                    }
+
+                    // スキャナーを停止し、結果を表示
+                    stopScanner();
+
+                    // 自動的に初期状態に戻す（2秒後）
                     setTimeout(() => {
                         clearResult();
-                        stopScanner();
                     }, 2000); // 2秒後にリセット
                 } else {
-                    // 1回目のスキャン後、次のスキャンを続けるためにスキャナーを停止
+                    // 1回目のスキャン後、スキャナーを停止して次のスキャンを待つ
                     stopScanner();
+                    showResult(`1回目のスキャン: ${product} (バーコード: ${barcode})`, '#007BFF');
                 }
             } else {
-                showResult(`バーコードが認識できません (バーコード: ${barcode})`, 'gray');
-                scanCount += 1; // スキャンカウントをインクリメント
+                scannedProducts.push(null);
+                console.log("スキャンされた商品: 認識できません");
 
-                // 2回スキャンされたらリセット
-                if (scanCount >= 2) {
+                if (scannedProducts.length === 2) {
+                    showResult(`バーコードが認識できません (バーコード: ${barcode})`, 'gray');
+
+                    // スキャナーを停止し、結果を表示
+                    stopScanner();
+
+                    // 自動的に初期状態に戻す（2秒後）
                     setTimeout(() => {
                         clearResult();
-                        stopScanner();
                     }, 2000); // 2秒後にリセット
                 } else {
-                    // 1回目のスキャン後、次のスキャンを続けるためにスキャナーを停止
+                    // 1回目のスキャン後、スキャナーを停止して次のスキャンを待つ
                     stopScanner();
+                    showResult(`1回目のスキャン: バーコードが認識できません (バーコード: ${barcode})`, 'gray');
                 }
             }
+
+            // 一時停止して誤読防止
+            stopScanner();
         }
 
-        // ボタンのイベントリスナー
+        // スキャン開始ボタンのイベントリスナー
         document.getElementById('scanButton').addEventListener('click', function() {
             if (isScanning) {
                 stopScanner();
             } else {
                 startScanner();
+            }
+        });
+
+        // リセットボタンのイベントリスナー
+        document.getElementById('resetButton').addEventListener('click', function() {
+            clearResult();
+            scannedProducts = [];
+            if (isScanning) {
+                stopScanner();
             }
         });
 
