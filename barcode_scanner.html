@@ -5,311 +5,329 @@
     <title>バーコードスキャナー</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <style>
+        /* CSSスタイリング */
         body, html {
             margin: 0;
             padding: 0;
             height: 100%;
-            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            font-family: Arial, sans-serif;
             background-color: #f0f0f0;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            transition: background-color 0.5s ease; /* 背景色変更のアニメーション */
+            justify-content: flex-start;
         }
         h1 {
-            text-align: center;
+            margin-top: 20px;
             margin-bottom: 20px;
+            text-align: center;
         }
-        #interactive.viewport {
+        #interactive-container {
             position: relative;
-            width: 100%; /* 幅を100%に拡大 */
-            max-width: none; /* 最大幅の制限を解除 */
-            height: 70vh; /* 高さをビュー高さの70%に設定 */
-            background: #000;
-            border-radius: 15px;
+            width: 100%;
+            max-width: 600px;
+            height: 50vh;
+            background-color: #000;
+            border-radius: 10px;
             overflow: hidden;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
         }
-        #interactive.viewport video {
+        #interactive-container video {
             width: 100%;
             height: 100%;
-            object-fit: cover; /* ビデオのアスペクト比を維持 */
+            object-fit: cover;
         }
         #result {
             margin-top: 20px;
-            padding: 20px;
+            padding: 15px;
             border-radius: 10px;
             color: white;
-            font-size: 1.5em;
-            font-weight: bold;
+            font-size: 1.2em;
             display: none;
+            transition: background-color 0.3s ease;
             text-align: center;
             width: 90%;
             max-width: 600px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-            word-break: break-word; /* テキストの改行を許可 */
         }
         #controls {
             margin-top: 20px;
             display: flex;
             gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+            width: 90%;
+            max-width: 600px;
         }
         .button {
-            padding: 15px 30px;
-            font-size: 1.2em;
+            padding: 10px 20px;
             border: none;
-            border-radius: 10px;
-            background-color: #007BFF;
-            color: white;
+            border-radius: 5px;
             cursor: pointer;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            color: white;
+            font-size: 1em;
             transition: background-color 0.3s ease;
+            flex: 1;
+            min-width: 120px;
         }
-        .button:hover {
-            background-color: #0056b3;
+        #scanButton { background-color: #4CAF50; }
+        #resetButton { background-color: #f44336; }
+        .button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
         }
-        /* リセットボタンのスタイル */
-        #resetButton {
-            padding: 15px 30px;
+        /* スキャン履歴 */
+        #history {
+            margin-top: 20px;
+            width: 90%;
+            max-width: 600px;
+            background-color: #fff;
+            border-radius: 10px;
+            padding: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            overflow-y: auto;
+            max-height: 200px;
+        }
+        #history h2 {
+            margin-top: 0;
+            text-align: center;
             font-size: 1.2em;
-            border: none;
-            border-radius: 10px;
-            background-color: #dc3545; /* 赤色に変更 */
-            color: white;
-            cursor: pointer;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
-            transition: background-color 0.3s ease;
+            color: #333;
         }
-        #resetButton:hover {
-            background-color: #c82333; /* ホバー時の赤色を濃く */
+        #history ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
         }
-
-        /* 横向きモード用のスタイル */
-        @media (orientation: landscape) {
-            #interactive.viewport {
-                width: 100vw; /* ビューポート幅の100%に拡大 */
-                height: 55vh; /* ビューポート高さの55%に設定 */
-            }
-            #result {
-                font-size: 1.2em;
-                padding: 15px;
-            }
-            .button, #resetButton {
-                padding: 12px 25px;
-                font-size: 1em;
-            }
+        #history li {
+            padding: 5px 0;
+            border-bottom: 1px solid #ddd;
+            font-size: 1em;
+            color: #555;
         }
-
         /* レスポンシブデザイン */
-        @media (max-width: 768px) and (orientation: portrait) {
-            #interactive.viewport {
-                height: 60vh;
+        @media (max-width: 600px) {
+            #interactive-container {
+                height: 40vh;
             }
-            #result {
-                font-size: 1.2em;
-                padding: 15px;
+            .button {
+                width: 100%;
+                margin: 5px 0;
             }
-            .button, #resetButton {
-                padding: 12px 25px;
-                font-size: 1em;
-            }
-        }
-
-        /* スキャンエリアのガイドライン */
-        #interactive.viewport::before {
-            content: "";
-            position: absolute;
-            top: 25%; /* 上から25% */
-            left: 10%; /* 左から10% */
-            width: 80%; /* 幅80% */
-            height: 50%; /* 高さ50% */
-            border: 2px solid rgba(0, 255, 0, 0.7); /* 緑色に変更 */
-            box-sizing: border-box;
-            pointer-events: none; /* オーバーレイをクリックできないように */
         }
     </style>
-    <!-- QuaggaJSのCDN -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
 </head>
 <body>
     <h1>バーコードスキャナー</h1>
-    <div id="interactive" class="viewport"></div>
+    <div id="interactive-container"></div>
     <div id="result"></div>
     <div id="controls">
         <button id="scanButton" class="button">スキャン開始</button>
         <button id="resetButton" class="button">リセット</button>
     </div>
+    <div id="history">
+        <h2>スキャン履歴</h2>
+        <ul id="historyList">
+            <!-- スキャン履歴がここに追加されます -->
+        </ul>
+    </div>
 
+    <!-- サウンドフィードバック用オーディオ要素 -->
+    <audio id="beepSound" src="https://www.soundjay.com/buttons/sounds/button-3.mp3" preload="auto"></audio>
+
+    <!-- QuaggaJSの読み込み -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
     <script>
-        // エラーハンドリング: エラーを画面に表示
-        window.onerror = function(message, source, lineno, colno, error) {
-            const resultDiv = document.getElementById('result');
-            resultDiv.style.backgroundColor = 'red'; // エラー時は赤色
-            resultDiv.textContent = `エラー: ${message} at ${source}:${lineno}:${colno}`;
-            resultDiv.style.display = 'block';
-            // 背景色を赤に変更
-            document.body.style.backgroundColor = 'red';
-            console.error("Unhandled error:", message, source, lineno, colno, error);
-        };
+        // 要素の取得
+        const resultDiv = document.getElementById('result');
+        const scanButton = document.getElementById('scanButton');
+        const resetButton = document.getElementById('resetButton');
+        const historyList = document.getElementById('historyList');
+        const beepSound = document.getElementById('beepSound');
+        const interactiveContainer = document.getElementById('interactive-container');
 
-        // 商品データのパターン定義
+        let scannedCodes = new Set();
+        let isScanning = false;
+        let scanHistory = JSON.parse(localStorage.getItem('scanHistory')) || [];
+
+        // プロダクトパターンの定義
         const productPatterns = {
             "5863S": "X-92-122",
             "GFEYS": "PLR-2"
-            // 必要に応じてパターンを追加
+            // 他のパターンを追加可能
         };
 
-        let previousProduct = null;
-        let isScanning = false;
-
-        // 結果表示用の関数
-        function showResult(message, color) {
-            const resultDiv = document.getElementById('result');
-            resultDiv.style.backgroundColor = color;
-            resultDiv.innerHTML = message; // textContentからinnerHTMLに変更
-            resultDiv.style.display = 'block';
-
-            // 背景色を変更
-            document.body.style.backgroundColor = color;
+        // スキャン履歴を表示する関数
+        function displayHistory() {
+            historyList.innerHTML = '';
+            scanHistory.forEach((item, index) => {
+                const listItem = document.createElement('li');
+                listItem.textContent = `${index + 1}. ${item}`;
+                historyList.appendChild(listItem);
+            });
         }
 
-        // 結果と背景色をクリアする関数
-        function clearResult() {
-            const resultDiv = document.getElementById('result');
-            resultDiv.style.display = 'none';
-            document.body.style.backgroundColor = '#f0f0f0'; // 元の色に戻す
-        }
+        // 履歴を初期表示
+        displayHistory();
 
-        // バーコードの特定位置からセグメントを抽出する関数
+        // バーコードから重要なセグメントを抽出する関数
         function extractImportantSegment(barcode) {
-            // 左から4番目からの5桁を抽出（インデックスは0から開始）
-            if (barcode.length >= 9) { // 最低限必要な長さをチェック
-                return barcode.substring(4, 9); // インデックス4から8まで（5文字）
+            // 左から4番目から5文字を抽出（インデックスは0から開始）
+            if (barcode.length >= 9) { // バーコードが最低9桁あるか確認
+                return barcode.substring(3, 8); // インデックス3から7までの5文字を抽出
             }
-            return null; // バーコードが短すぎる場合はnullを返す
+            return null; // 短すぎる場合はnullを返す
         }
 
-        // バーコードの分類関数
+        // バーコードを分類する関数
         function classifyProduct(barcode) {
             const segment = extractImportantSegment(barcode);
-            if (!segment) return null; // セグメントが抽出できない場合はnullを返す
-
-            return productPatterns[segment] || null; // マッピングが存在すれば返す
+            if (segment) {
+                return productPatterns[segment] || null;
+            }
+            return null;
         }
 
-        // スキャン結果の処理
-        function handleDetected(data) {
-            const barcode = data.codeResult.code;
-            console.log("検出されたバーコード:", barcode);
-            const product = classifyProduct(barcode);
-
-            if (product) {
-                if (product === previousProduct) {
-                    // 同じ商品を2回読み取った場合は赤色に変更
-                    console.log("Duplicate detected:", product);
-                    showResult(`NG: ${product} を重複して読み取りました<br>${barcode}`, 'red');
-                } else {
-                    if (previousProduct !== null) {
-                        // 異なる商品を読み取った場合は緑色に変更
-                        console.log(`Product changed from ${previousProduct} to ${product}`);
-                        showResult(`OK: ${previousProduct} → ${product}<br>${barcode}`, '#28a745'); // 緑色を鮮やかに変更
-                    } else {
-                        // 最初のスキャンの場合
-                        console.log(`First scan detected: ${product}`);
-                        showResult(`検出: ${product}<br>${barcode}`, '#007BFF'); // 初期検出時は青色
-                    }
-                }
-                previousProduct = product;
-                console.log("previousProduct updated to:", previousProduct);
-                stopScanner(); // スキャン後に停止
+        // 結果を表示する関数
+        function showResult(message, color, code = '') {
+            resultDiv.style.display = 'block';
+            resultDiv.style.backgroundColor = color;
+            if (code) {
+                resultDiv.innerHTML = `<strong>${message}</strong><br>${code}`;
             } else {
-                console.log("Product could not be classified for barcode:", barcode);
-                showResult(`バーコードが認識できません<br>${barcode}`, 'gray');
+                resultDiv.textContent = message;
+            }
+
+            // サウンドフィードバックと振動フィードバック
+            if (color === 'green') {
+                beepSound.play().catch((e) => {
+                    console.error('サウンドの再生に失敗しました:', e);
+                });
+            } else if (color === 'red' && navigator.vibrate) {
+                navigator.vibrate(500); // NGの場合に振動
             }
         }
 
-        // onDetectedハンドラーの定義
-        function onDetected(data) {
-            const now = Date.now();
-            if (now - onDetected.lastDetectedTime < 500) { // 500ms間隔で処理
-                return;
-            }
-            onDetected.lastDetectedTime = now;
-            handleDetected(data);
+        // 結果をクリアする関数
+        function clearResult() {
+            resultDiv.style.display = 'none';
+            resultDiv.textContent = '';
         }
-        onDetected.lastDetectedTime = 0;
 
-        // スキャンの開始
+        // スキャンを開始する関数
         function startScanner() {
             if (isScanning) return;
-
-            // 結果表示をクリア
             clearResult();
-
             Quagga.init({
                 inputStream: {
                     name: "Live",
                     type: "LiveStream",
-                    target: document.querySelector('#interactive'),
+                    target: interactiveContainer,
                     constraints: {
-                        facingMode: "environment", // 背面カメラを使用
-                        width: { ideal: 1280 }, // 解像度を下げる（理想値）
+                        facingMode: "environment",
+                        width: { ideal: 1280 },
                         height: { ideal: 720 }
-                    },
-                    singleChannel: false // カラーモードを使用
+                    }
                 },
                 decoder: {
-                    readers: ["code_128_reader"], // 必要なバーコードリーダーのみを指定
-                    multiple: false // 複数バーコードの同時読み取りを無効化
+                    readers: [
+                        "code_128_reader",
+                        "ean_reader",
+                        "ean_8_reader",
+                        "code_39_reader",
+                        "code_39_vin_reader",
+                        "codabar_reader",
+                        "upc_reader",
+                        "upc_e_reader",
+                        "i2of5_reader"
+                    ]
                 },
-                locate: true, // バーコードの位置を特定
-                numOfWorkers: navigator.hardwareConcurrency || 4, // 利用可能なCPUコア数に基づくワーカー数
+                locate: true,
+                frequency: 10 // フレームレートを調整して読み取り速度を最適化
             }, function(err) {
                 if (err) {
                     console.error(err);
-                    alert("バーコードスキャナーの初期化に失敗しました。");
+                    showResult("カメラの初期化に失敗しました。", 'red');
                     return;
                 }
                 Quagga.start();
                 isScanning = true;
-                document.getElementById('scanButton').textContent = "スキャン停止";
+                scanButton.textContent = "スキャン停止";
             });
 
-            // onDetectedイベントにハンドラーを追加
             Quagga.onDetected(onDetected);
         }
 
-        // スキャンの停止
-        function stopScanner() {
-            if (!isScanning) return;
+        // バーコード検出時の処理
+        function onDetected(data) {
+            const code = data.codeResult.code;
+            console.log("検出されたバーコード:", code);
+
+            const product = classifyProduct(code);
+
+            if (product) {
+                if (scannedCodes.has(code)) {
+                    showResult(`NG: 重複したコードです`, 'red', code);
+                } else {
+                    scannedCodes.add(code);
+                    scanHistory.push(`${code} - ${product}`);
+                    localStorage.setItem('scanHistory', JSON.stringify(scanHistory));
+                    displayHistory();
+                    showResult(`OK: ${product}`, 'green', code);
+                }
+            } else {
+                showResult(`NG: 未登録のコードです`, 'red', code);
+            }
 
             Quagga.stop();
             isScanning = false;
-            document.getElementById('scanButton').textContent = "スキャン開始";
-            Quagga.offDetected(onDetected); // 定義済みのonDetected関数をオフにする
+            scanButton.textContent = "スキャン開始";
+
+            // 3秒後に自動で再スキャンを開始
+            setTimeout(() => {
+                startScanner();
+            }, 3000);
         }
 
-        // スキャン開始ボタンのイベントリスナー
-        document.getElementById('scanButton').addEventListener('click', function() {
+        // スキャンをリセットする関数
+        function resetScanner() {
             if (isScanning) {
-                stopScanner();
+                Quagga.stop();
+                isScanning = false;
+                scanButton.textContent = "スキャン開始";
+            }
+            clearResult();
+            scannedCodes.clear();
+            scanHistory = [];
+            localStorage.removeItem('scanHistory');
+            displayHistory();
+        }
+
+        // スキャン開始/停止ボタンのイベントリスナー
+        scanButton.addEventListener('click', () => {
+            if (isScanning) {
+                Quagga.stop();
+                isScanning = false;
+                scanButton.textContent = "スキャン開始";
             } else {
                 startScanner();
             }
         });
 
         // リセットボタンのイベントリスナー
-        document.getElementById('resetButton').addEventListener('click', function() {
-            clearResult();
-            previousProduct = null;
-            console.log("previousProduct has been reset to null");
-            stopScanner(); // 一度停止してからスキャンを再開
-            startScanner(); // リセット後にスキャンを自動開始
+        resetButton.addEventListener('click', () => {
+            resetScanner();
         });
 
-        // 初期状態ではスキャン停止
-        clearResult();
+        // サウンドを事前にロードするためのユーザータップイベント
+        document.body.addEventListener('click', () => {
+            if (beepSound.paused && beepSound.readyState >= 2) {
+                beepSound.play().then(() => {
+                    beepSound.pause();
+                    beepSound.currentTime = 0;
+                }).catch((e) => {
+                    console.warn('サウンドの事前ロードに失敗:', e);
+                });
+            }
+        }, { once: true });
     </script>
 </body>
 </html>
