@@ -94,6 +94,18 @@
                 font-size: 1em;
             }
         }
+
+        /* 追加: 横向き（ランドスケープ）時のスタイル調整 */
+        @media (orientation: landscape) {
+            #interactive.viewport {
+                height: 50vh; /* 横画面時の高さを調整 */
+            }
+        }
+
+        /* 追加: 高さが小さすぎないように最小高さを設定 */
+        #interactive.viewport {
+            min-height: 300px; /* 必要に応じて調整 */
+        }
     </style>
     <!-- QuaggaJSのCDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
@@ -182,10 +194,10 @@
                         height: { ideal: 720 }
                     },
                     area: { // カメラの処理領域を指定
-                        top: "0%",
-                        right: "0%",
-                        bottom: "0%",
-                        left: "0%"
+                        top: "10%",    /* 追加: 横画面時の表示を調整 */
+                        right: "10%",
+                        bottom: "10%",
+                        left: "10%"
                     },
                     singleChannel: false // カラーモードを使用
                 },
@@ -195,7 +207,7 @@
                 },
                 locate: true, // バーコードの位置を特定
                 numOfWorkers: navigator.hardwareConcurrency || 4, // 利用可能なCPUコア数に基づくワーカー数
-                frequency: 10, // フレームの処理頻度（Hz）
+                // frequency: 25, // QuaggaJSにはfrequencyオプションがないため削除
                 debug: false // デバッグ情報を無効化
             }, function(err) {
                 if (err) {
@@ -230,7 +242,7 @@
             if (product) {
                 if (product === previousProduct) {
                     // 同じ商品を2回読み取った場合は赤色に変更
-                    showResult(`NG: ${product} を重複しました<br>${barcode}`, 'red');
+                    showResult(`NG: ${product} を重複して読み取りました<br>${barcode}`, 'red');
                 } else {
                     if (previousProduct !== null) {
                         // 異なる商品を読み取った場合は緑色に変更
