@@ -88,8 +88,8 @@
         /* 横向きモード用のスタイル */
         @media (orientation: landscape) {
             #interactive.viewport {
-                width: 80vw; /* ビューポート幅の80% */
-                height: 60vh; /* ビューポート高さの60% */
+                width: 90vw; /* ビューポート幅の90%に拡大 */
+                height: 60vh; /* ビューポート高さの60%に設定 */
             }
             #result {
                 font-size: 1.2em;
@@ -184,13 +184,49 @@
             return productPatterns[segment] || null; // マッピングが存在すれば返す
         }
 
+        // スキャン結果の処理
+        function handleDetected(data) {
+            const barcode = data.codeResult.code;
+            console.log("検出されたバーコード:", barcode);
+            const product = classifyProduct(barcode);
+
+            if (product) {
+                if (product === previousProduct) {
+                    // 同じ商品を2回読み取った場合は赤色に変更
+                    showResult(`NG: ${product} を重複して読み取りました<br>${barcode}`, 'red');
+                } else {
+                    if (previousProduct !== null) {
+                        // 異なる商品を読み取った場合は緑色に変更
+                        showResult(`OK: ${previousProduct} → ${product}<br>${barcode}`, '#28a745'); // 緑色を鮮やかに変更
+                    } else {
+                        // 最初のスキャンの場合
+                        showResult(`検出: ${product}<br>${barcode}`, '#007BFF'); // 初期検出時は青色
+                    }
+                }
+                previousProduct = product;
+                stopScanner(); // スキャン後に停止
+            } else {
+                showResult(`バーコードが認識できません<br>${barcode}`, 'gray');
+            }
+        }
+
+        // onDetectedハンドラーの定義
+        function onDetected(data) {
+            const now = Date.now();
+            if (now - onDetected.lastDetectedTime < 500) { // 500ms間隔で処理
+                return;
+            }
+            onDetected.lastDetectedTime = now;
+            handleDetected(data);
+        }
+        onDetected.lastDetectedTime = 0;
+
         // スキャンの開始
         function startScanner() {
             if (isScanning) return;
 
-            // 結果と背景色をクリア
+            // 結果表示をクリア
             clearResult();
-            // previousProductはリセットしない
 
             Quagga.init({
                 inputStream: {
@@ -228,17 +264,8 @@
                 document.getElementById('scanButton').textContent = "スキャン停止";
             });
 
-            let lastDetectedTime = 0;
-
-            // onDetectedイベントでフレーム処理の頻度を制御（500ms間隔）
-            Quagga.onDetected(function(data) {
-                const now = Date.now();
-                if (now - lastDetectedTime < 500) { // 500ms間隔で処理
-                    return;
-                }
-                lastDetectedTime = now;
-                onDetected(data);
-            });
+            // onDetectedイベントにハンドラーを追加
+            Quagga.onDetected(onDetected);
         }
 
         // スキャンの停止
@@ -248,33 +275,7 @@
             Quagga.stop();
             isScanning = false;
             document.getElementById('scanButton').textContent = "スキャン開始";
-            Quagga.offDetected(onDetected); // onDetectedをオフにする
-        }
-
-        // スキャン結果の処理
-        function onDetected(data) {
-            const barcode = data.codeResult.code;
-            console.log("検出されたバーコード:", barcode);
-            const product = classifyProduct(barcode);
-
-            if (product) {
-                if (product === previousProduct) {
-                    // 同じ商品を2回読み取った場合は赤色に変更
-                    showResult(`NG: ${product} を重複して読み取りました<br>${barcode}`, 'red');
-                } else {
-                    if (previousProduct !== null) {
-                        // 異なる商品を読み取った場合は緑色に変更
-                        showResult(`OK: ${previousProduct} → ${product}<br>${barcode}`, '#28a745'); // 緑色を鮮やかに変更
-                    } else {
-                        // 最初のスキャンの場合
-                        showResult(`検出: ${product}<br>${barcode}`, '#007BFF'); // 初期検出時は青色
-                    }
-                }
-                previousProduct = product;
-                stopScanner(); // スキャン後に停止
-            } else {
-                showResult(`バーコードが認識できません<br>${barcode}`, 'gray');
-            }
+            Quagga.offDetected(onDetected); // 定義済みのonDetected関数をオフにする
         }
 
         // スキャン開始ボタンのイベントリスナー
@@ -290,6 +291,7 @@
         document.getElementById('resetButton').addEventListener('click', function() {
             clearResult();
             previousProduct = null;
+            stopScanner(); // 一度停止してからスキャンを再開
             startScanner(); // リセット後にスキャンを自動開始
         });
 
