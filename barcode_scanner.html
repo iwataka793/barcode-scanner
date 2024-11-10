@@ -88,8 +88,8 @@
         /* 横向きモード用のスタイル */
         @media (orientation: landscape) {
             #interactive.viewport {
-                width: 90vw; /* ビューポート幅の90%に拡大 */
-                height: 60vh; /* ビューポート高さの60%に設定 */
+                width: 95vw; /* ビューポート幅の95%に拡大 */
+                height: 50vh; /* ビューポート高さの50%に設定 */
             }
             #result {
                 font-size: 1.2em;
@@ -252,7 +252,6 @@
                 },
                 locate: true, // バーコードの位置を特定
                 numOfWorkers: navigator.hardwareConcurrency || 4, // 利用可能なCPUコア数に基づくワーカー数
-                // QuaggaJSにはfrequencyオプションがないため、以下のようにonDetectedで処理頻度を制御
             }, function(err) {
                 if (err) {
                     console.error(err);
