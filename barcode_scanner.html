@@ -25,12 +25,12 @@
             position: relative;
             width: 100%; /* 幅を100%に拡大 */
             max-width: none; /* 最大幅の制限を解除 */
-            height: 70vh; /* 縦画面時の高さを70vhに設定 */
+            height: 60vh; /* 縦画面時の高さを60vhに設定 */
             background: #000;
             border-radius: 15px;
             overflow: hidden;
             box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-            min-height: 300px; /* 最小高さを300pxに設定 */
+            min-height: 250px; /* 最小高さを250pxに設定 */
         }
         #interactive.viewport video {
             filter: brightness(1.2) contrast(1.1); /* 明るさとコントラストの調整 */
@@ -102,11 +102,11 @@
         /* 横向き（ランドスケープ）時のスタイル調整 */
         @media (orientation: landscape) {
             #interactive.viewport {
-                height: 40vh; /* 横画面時の高さを40vhに設定 */
+                height: 30vh; /* 横画面時の高さを30vhに設定 */
             }
         }
 
-        /* スキャンエリアを示すオーバーレイ */
+        /* スキャンエリアの枠線 */
         #interactive.viewport::before {
             content: "";
             position: absolute;
@@ -121,20 +121,7 @@
             border-radius: 10px;
         }
 
-        /* 目標カーソルの追加: 縦線 */
-        #interactive.viewport::after {
-            content: "";
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 2px;
-            height: 60%;
-            background-color: #00FF00; /* 緑色の縦線 */
-            transform: translate(-50%, -50%);
-            pointer-events: none;
-        }
-
-        /* 目標カーソルの追加: 横線 */
+        /* スキャンエリアの横線 */
         #interactive.viewport::after {
             content: "";
             position: absolute;
@@ -146,13 +133,49 @@
             transform: translate(-50%, -50%);
             pointer-events: none;
         }
+
+        /* スキャンエリアの縦線 */
+        #interactive.viewport::before {
+            /* 既に枠線があるため、別の方法で縦線を追加 */
+        }
+
+        /* 別の擬似要素で縦線を追加 */
+        #interactive.viewport::after {
+            /* 横線と同じ `::after` に縦線を追加することはできません */
+        }
+
+        /* 正しい方法: 別のクラスを使用 */
+        .vertical-line, .horizontal-line {
+            position: absolute;
+            background-color: #00FF00;
+            pointer-events: none;
+        }
+
+        .vertical-line {
+            top: 20%;
+            left: 50%;
+            width: 2px;
+            height: 60%;
+            transform: translateX(-50%);
+        }
+
+        .horizontal-line {
+            top: 50%;
+            left: 20%;
+            width: 60%;
+            height: 2px;
+            transform: translateY(-50%);
+        }
     </style>
     <!-- QuaggaJSのCDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
 </head>
 <body>
     <h1>バーコードスキャナー</h1>
-    <div id="interactive" class="viewport"></div>
+    <div id="interactive" class="viewport">
+        <div class="vertical-line"></div>
+        <div class="horizontal-line"></div>
+    </div>
     <div id="result"></div>
     <div id="controls">
         <button id="scanButton" class="button">スキャン開始</button>
@@ -234,10 +257,10 @@
                         height: { ideal: 720 }  // 縦解像度
                     },
                     area: { // カメラの処理領域を指定
-                        top: "20%",    /* スキャンエリアを中央に配置 */
-                        right: "20%",
-                        bottom: "20%",
-                        left: "20%"
+                        top: "10%",    
+                        right: "10%",
+                        bottom: "10%",
+                        left: "10%"
                     },
                     singleChannel: false // カラーモードを使用
                 },
