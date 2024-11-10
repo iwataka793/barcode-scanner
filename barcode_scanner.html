@@ -88,7 +88,7 @@
         /* 横向きモード用のスタイル */
         @media (orientation: landscape) {
             #interactive.viewport {
-                width: 100vw; /* ビューポート幅の95%に拡大 */
+                width: 95vw; /* ビューポート幅の95%に拡大 */
                 height: 50vh; /* ビューポート高さの50%に設定 */
             }
             #result {
@@ -114,6 +114,19 @@
                 padding: 12px 25px;
                 font-size: 1em;
             }
+        }
+
+        /* スキャンエリアのガイドライン */
+        #interactive.viewport::before {
+            content: "";
+            position: absolute;
+            top: 25%; /* 上から25% */
+            left: 10%; /* 左から10% */
+            width: 80%; /* 幅80% */
+            height: 50%; /* 高さ50% */
+            border: 2px solid rgba(255, 255, 255, 0.7);
+            box-sizing: border-box;
+            pointer-events: none; /* オーバーレイをクリックできないように */
         }
     </style>
     <!-- QuaggaJSのCDN -->
@@ -237,12 +250,6 @@
                         facingMode: "environment", // 背面カメラを使用
                         width: { ideal: 1280 }, // 解像度を下げる（理想値）
                         height: { ideal: 720 }
-                    },
-                    area: { // カメラの処理領域を指定
-                        top: "20%",    
-                        right: "0%",  
-                        bottom: "20%", 
-                        left: "0%"    
                     },
                     singleChannel: false // カラーモードを使用
                 },
