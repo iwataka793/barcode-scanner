@@ -25,12 +25,15 @@
             position: relative;
             width: 100%; /* 幅を100%に拡大 */
             max-width: none; /* 最大幅の制限を解除 */
-            height: 70vh; /* 縦画面時の高さをビュー高さの70%に設定 */
+            height: 70vh; /* 縦画面時の高さを70vhに設定 */
             background: #000;
             border-radius: 15px;
             overflow: hidden;
             box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-            min-height: 300px; /* 最小高さを設定 */
+            min-height: 300px; /* 最小高さを300pxに設定 */
+        }
+        #interactive.viewport video {
+            filter: brightness(1.2) contrast(1.1); /* 明るさとコントラストの調整 */
         }
         #result {
             margin-top: 20px;
@@ -81,7 +84,7 @@
             background-color: #5a6268;
         }
 
-        /* レスポンシブデザイン */
+        /* レスポンシブデザイン: 縦画面時の調整 */
         @media (max-width: 768px) {
             #interactive.viewport {
                 height: 60vh;
@@ -96,16 +99,52 @@
             }
         }
 
-        /* 追加: 横向き（ランドスケープ）時のスタイル調整 */
-        @media (orientation: landscape) and (max-width: 896px) { /* iPhone XRの横画面幅に合わせてmax-widthを設定 */
+        /* 横向き（ランドスケープ）時のスタイル調整 */
+        @media (orientation: landscape) {
             #interactive.viewport {
                 height: 40vh; /* 横画面時の高さを40vhに設定 */
             }
         }
 
-        /* 追加: 高さが小さすぎないように最小高さを設定 */
-        #interactive.viewport {
-            min-height: 300px; /* 必要に応じて調整 */
+        /* スキャンエリアを示すオーバーレイ */
+        #interactive.viewport::before {
+            content: "";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 60%;
+            height: 60%;
+            border: 2px solid #00FF00; /* 緑色の枠線 */
+            box-sizing: border-box;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            border-radius: 10px;
+        }
+
+        /* 目標カーソルの追加: 縦線 */
+        #interactive.viewport::after {
+            content: "";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 2px;
+            height: 60%;
+            background-color: #00FF00; /* 緑色の縦線 */
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+        }
+
+        /* 目標カーソルの追加: 横線 */
+        #interactive.viewport::after {
+            content: "";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 60%;
+            height: 2px;
+            background-color: #00FF00; /* 緑色の横線 */
+            transform: translate(-50%, -50%);
+            pointer-events: none;
         }
     </style>
     <!-- QuaggaJSのCDN -->
@@ -191,14 +230,14 @@
                     target: document.querySelector('#interactive'),
                     constraints: {
                         facingMode: "environment", // 背面カメラを使用
-                        width: { ideal: 1280 }, // 解像度を下げる（理想値）
-                        height: { ideal: 720 }
+                        width: { ideal: 1280 }, // 横解像度
+                        height: { ideal: 720 }  // 縦解像度
                     },
                     area: { // カメラの処理領域を指定
-                        top: "10%",    /* 追加: 横画面時の表示を調整 */
-                        right: "10%",
-                        bottom: "10%",
-                        left: "10%"
+                        top: "20%",    /* スキャンエリアを中央に配置 */
+                        right: "20%",
+                        bottom: "20%",
+                        left: "20%"
                     },
                     singleChannel: false // カラーモードを使用
                 },
