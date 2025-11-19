@@ -4,11 +4,8 @@
     <meta charset="UTF-8">
     <title>バーコードスキャナー</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    
+
     <style>
-        /* ============================
-           基本スタイル
-        ============================ */
         body, html {
             margin: 0;
             padding: 0;
@@ -18,26 +15,22 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: flex-start;
-            transition: background-color 0.5s ease;
         }
 
         h1 {
-            margin: 16px 0;
-            font-size: 2rem;
+            font-size: 2.6em;
+            margin: 18px 0 10px;
         }
 
-        /* ============================
-           カメラビュー（縦画面）
-        ============================ */
+        /* ===== カメラ表示領域 ===== */
         #interactive.viewport {
             position: relative;
-            width: 100%;
-            height: 40vh;
+            width: 95vw;
+            height: 50vh;           /* 縦画面用：十分な高さ */
             background: #000;
             border-radius: 15px;
             overflow: hidden;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
         }
 
         #interactive.viewport video {
@@ -48,25 +41,15 @@
             will-change: transform;
         }
 
-        /* ============================
-           ★ 横画面時：潰れ防止 ★
-        ============================ */
+        /* 横画面のときは幅いっぱい＆少し高め */
         @media (orientation: landscape) {
             #interactive.viewport {
                 width: 100vw;
-                height: calc(100vw * 0.56); /* 16:9比率で安定 */
-                max-height: 80vh;
-            }
-            #interactive.viewport video {
-                width: 100%;
-                height: 100%;
-                object-fit: cover;
-                transform: translateZ(0);
-                will-change: transform;
+                height: 60vh;      /* シンプルに60vh使う */
             }
         }
 
-        /* スキャンガイド枠 */
+        /* ガイド枠 */
         #interactive.viewport::before {
             content: "";
             position: absolute;
@@ -74,372 +57,360 @@
             left: 5%;
             width: 90%;
             height: 40%;
-            border: 2px solid rgba(0, 255, 0, 0.7);
-            box-sizing: border-box;
+            border: 3px solid rgba(0, 255, 0, 0.7);
             pointer-events: none;
+            box-sizing: border-box;
         }
 
-        /* ============================
-           結果表示
-        ============================ */
+        /* 結果表示エリア */
         #result {
             margin-top: 12px;
-            padding: 12px 16px;
+            padding: 14px;
             border-radius: 10px;
-            color: white;
-            font-size: 1.1em;
-            font-weight: bold;
+            font-size: 1.4em;
+            color: #fff;
             display: none;
+            width: 90%;
+            max-width: 600px;
             text-align: center;
-            width: 94%;
-            max-width: 700px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-            word-break: break-word;
         }
 
-        /* ============================
-           ボタン類
-        ============================ */
+        /* ===== ボタン類 ===== */
         #controls {
-            margin-top: 12px;
+            margin-top: 14px;
             display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-            justify-content: center;
+            gap: 14px;
         }
 
         .button {
-            padding: 12px 24px;
-            font-size: 1.1em;
-            border-radius: 10px;
+            padding: 13px 28px;
+            font-size: 1.25em;
             border: none;
-            background-color: #007BFF;
-            color: white;
+            border-radius: 10px;
             cursor: pointer;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            color: white;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.2);
         }
-        .button:hover { background-color: #0056b3; }
 
+        #scanButton { background-color: #007BFF; }
         #resetButton { background-color: #dc3545; }
-        #resetButton:hover { background-color: #c82333; }
+        #printButton { background-color: #007BFF; }
 
-        #printButton { background-color: #28a745; }
-        #printButton:hover { background-color: #1f7a33; }
-
-        /* ============================
-           名前選択
-        ============================ */
-        #nameRow {
-            margin-top: 10px;
-            width: 94%;
-            max-width: 700px;
+        /* ===== 名前選択＋表示 ===== */
+        #nameArea {
+            margin-top: 14px;
+            font-size: 1.3em;
             display: flex;
             align-items: center;
             gap: 8px;
         }
-        #userName {
-            flex: 1;
-            padding: 8px;
-            border-radius: 6px;
-            border: 1px solid #ccc;
-            background: white;
+
+        #nameSelect {
+            font-size: 1em;
+            padding: 6px 12px;
+            border-radius: 8px;
         }
 
-        /* ============================
-           履歴テーブル
-        ============================ */
+        #operatorDisplay {
+            margin-top: 4px;
+            font-size: 1.2em;
+        }
+
+        /* ===== 履歴テーブル ===== */
         #historyContainer {
-            margin-top: 10px;
-            width: 94%;
-            max-width: 700px;
+            width: 95%;
             background: white;
-            border-radius: 10px;
-            padding: 10px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+            margin-top: 18px;
+            padding: 14px;
+            border-radius: 14px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
         }
 
-        #historyTable {
+        #historyContainer h2 {
+            margin: 0 0 8px;
+        }
+
+        table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 0.85rem;
+            font-size: 1.05em;
+            text-align: center;
         }
 
-        #historyTable th, #historyTable td {
-            border: 1px solid #ccc;
-            padding: 4px 6px;
-            word-break: break-all;
+        th, td {
+            border-bottom: 1px solid #ccc;
+            padding: 8px;
         }
 
-        #historyTable th {
-            background: #f5f5f5;
+        th {
+            background: #eee;
         }
 
-        /* ============================
-           印刷用設定
-        ============================ */
-        #printHeader {
-            display: none;
-            width: 94%;
-            max-width: 700px;
-            margin-top: 10px;
-        }
-
+        /* ===== 印刷時 ===== */
         @media print {
-            #interactive, #controls, #result, #nameRow { display: none !important; }
-            body, html { background: white; }
-            #printHeader { display: block !important; }
-            #historyContainer { box-shadow: none; }
+            body {
+                background: #fff;
+            }
+            #interactive,
+            #controls,
+            #nameSelect {
+                display: none;
+            }
+            h1 {
+                margin-top: 0;
+            }
+            #result {
+                display: none !important;
+            }
         }
     </style>
 
     <!-- QuaggaJS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
 </head>
-
 <body>
 
-    <h1>バーコードスキャナー</h1>
+<h1>バーコードスキャナー</h1>
 
-    <div id="interactive" class="viewport"></div>
-    <div id="result"></div>
+<div id="interactive" class="viewport"></div>
 
-    <div id="controls">
-        <button id="scanButton" class="button">スキャン開始</button>
-        <button id="resetButton" class="button">リセット</button>
-        <button id="printButton" class="button">印刷</button>
-    </div>
+<div id="controls">
+    <button id="scanButton" class="button">スキャン開始</button>
+    <button id="resetButton" class="button">リセット</button>
+    <button id="printButton" class="button">印刷</button>
+</div>
 
-    <div id="nameRow">
-        <span>名前：</span>
-        <select id="userName">
-            <option value="">選択してください</option>
-            <option value="岩田 薫">岩田 薫</option>
-            <option value="A班">A班</option>
-            <option value="B班">B班</option>
-        </select>
-    </div>
+<div id="nameArea">
+    <span>名前：</span>
+    <select id="nameSelect">
+        <option value="">選択してください</option>
+        <!-- ★ ここに事前に使う名前を増やしておけば楽 -->
+        <option value="岩田薫">岩田薫</option>
+        <option value="佐藤">佐藤</option>
+        <option value="田中">田中</option>
+        <option value="高橋">高橋</option>
+    </select>
+</div>
 
-    <!-- 印刷ヘッダー（プリント時だけ表示） -->
-    <div id="printHeader">
-        <div>作業者：<span id="printUserName"></span></div>
-        <div>印刷日時：<span id="printDateTime"></span></div>
-    </div>
+<div id="operatorDisplay">担当者：<span id="operatorName">未選択</span></div>
 
-    <!-- 履歴 -->
-    <div id="historyContainer">
-        <h2>スキャン履歴（最大100件）</h2>
-        <table id="historyTable">
-            <thead>
-                <tr>
-                    <th>No.</th>
-                    <th>時刻</th>
-                    <th>判定</th>
-                    <th>品番</th>
-                    <th>バーコード</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
-    </div>
+<div id="result"></div>
+
+<div id="historyContainer">
+    <h2>スキャン履歴（最大100件）</h2>
+    <div id="historyMeta"></div>
+    <table id="historyTable">
+        <thead>
+            <tr>
+                <th>No.</th>
+                <th>時刻</th>
+                <th>判定</th>
+                <th>品番</th>
+                <th>バーコード</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+</div>
 
 <script>
-/* ============================
-   エラー
-============================ */
-window.onerror = function(msg){
-    alert("エラー: " + msg);
-};
-
-/* ============================
-   パターン
-============================ */
+/* ==== 商品マッピング ==== */
 const productPatterns = {
     "5863S": "X-92-122",
     "GFEYS": "PLR-2"
+    // 必要に応じてここに追加
 };
 
-const MAX_HISTORY = 100;
-let scanHistory = [];
 let previousProduct = null;
 let isScanning = false;
+let history = [];
 
-/* ============================
-   ユーティリティ
-============================ */
-function nowStr(){
-    const d = new Date();
-    const p = n=>String(n).padStart(2,"0");
-    return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+/* 誤認識対策用 */
+let lastDetectedCode = null;
+let confirmCount = 0;
+let lastDetectedTime = 0;
+
+/* ===== 表示関連 ===== */
+function showResult(message, color) {
+    const resultDiv = document.getElementById('result');
+    resultDiv.style.display = 'block';
+    resultDiv.style.backgroundColor = color;
+    resultDiv.innerHTML = message;
 }
 
-function classifyProduct(barcode){
-    if(barcode.length < 9) return null;
-    const seg = barcode.substring(4, 9);
-    return productPatterns[seg] || null;
+/* 履歴追加（最大100件） */
+function addHistory(judge, product, barcode) {
+    const now = new Date().toLocaleString();
+    history.unshift({ time: now, judge, product, barcode });
+    if (history.length > 100) {
+        history.pop();
+    }
+    updateHistoryTable();
 }
 
-function showResult(msg, color){
-    const r = document.getElementById("result");
-    r.style.backgroundColor = color;
-    r.innerHTML = msg;
-    r.style.display = "block";
-}
-
-function clearResult(){
-    document.getElementById("result").style.display = "none";
-}
-
-/* ============================
-   履歴
-============================ */
-function addHistory(status, product, barcode){
-    scanHistory.push({
-        time: nowStr(),
-        status,
-        product,
-        barcode
-    });
-    if(scanHistory.length > MAX_HISTORY) scanHistory.shift();
-    renderHistory();
-}
-
-function renderHistory(){
-    const tbody = document.querySelector("#historyTable tbody");
-    tbody.innerHTML = "";
-    scanHistory.forEach((h,i)=>{
-        const tr = document.createElement("tr");
+/* 履歴テーブル更新 */
+function updateHistoryTable() {
+    const tbody = document.querySelector('#historyTable tbody');
+    tbody.innerHTML = '';
+    history.forEach((item, index) => {
+        const tr = document.createElement('tr');
         tr.innerHTML = `
-            <td>${i+1}</td>
-            <td>${h.time}</td>
-            <td>${h.status}</td>
-            <td>${h.product}</td>
-            <td>${h.barcode}</td>
+            <td>${index + 1}</td>
+            <td>${item.time}</td>
+            <td>${item.judge}</td>
+            <td>${item.product}</td>
+            <td>${item.barcode}</td>
         `;
         tbody.appendChild(tr);
     });
+
+    // 印刷用のメタ情報（担当者＋件数）
+    const name = document.getElementById('operatorName').textContent;
+    const metaDiv = document.getElementById('historyMeta');
+    metaDiv.textContent = `担当者：${name} / 件数：${history.length}`;
 }
 
-/* ============================
-   検出処理（誤認識防止版）
-============================ */
-function handleDetected(data){
-    const code = data.codeResult.code;
-    const product = classifyProduct(code);
-    const t = nowStr();
+/* セグメント抽出＆分類 */
+function extractImportantSegment(barcode) {
+    if (barcode.length >= 9) {
+        return barcode.substring(4, 9);  // 5文字
+    }
+    return null;
+}
 
-    if(product){
-        if(product === previousProduct){
-            showResult(`NG（重複）<br>${product}<br>${code}<br>${t}`, "red");
-            addHistory("NG（重複）", product, code);
-        }else{
-            if(previousProduct){
-                showResult(`OK（切替）<br>${previousProduct} → ${product}<br>${code}<br>${t}`, "green");
-                addHistory("OK（切替）", product, code);
-            }else{
-                showResult(`検出<br>${product}<br>${code}<br>${t}`, "blue");
-                addHistory("検出", product, code);
+function classifyProduct(barcode) {
+    const seg = extractImportantSegment(barcode);
+    if (!seg) return null;
+    return productPatterns[seg] || null;
+}
+
+/* 検出処理本体 */
+function handleDetected(barcode) {
+    const product = classifyProduct(barcode);
+
+    if (product) {
+        if (product === previousProduct) {
+            showResult(`NG: ${product} を重複して読み取りました<br>${barcode}`, 'red');
+            addHistory('NG(重複)', product, barcode);
+        } else {
+            if (previousProduct !== null) {
+                showResult(`OK: ${previousProduct} → ${product}<br>${barcode}`, '#28a745');
+                addHistory('OK(変更)', product, barcode);
+            } else {
+                showResult(`検出: ${product}<br>${barcode}`, '#007BFF');
+                addHistory('OK', product, barcode);
             }
         }
         previousProduct = product;
-        stopScanner();
-    }else{
-        showResult(`分類不可<br>${code}<br>${t}`, "gray");
-        addHistory("分類不可", "", code);
+    } else {
+        showResult(`バーコードが認識できません<br>${barcode}`, 'gray');
+        addHistory('不明', '-', barcode);
+    }
+
+    stopScanner();
+}
+
+/* Quagga の onDetected（誤認識対策入り） */
+function onDetected(data) {
+    const now = Date.now();
+    if (now - lastDetectedTime < 400) {   // 400ms以内は無視
+        return;
+    }
+    lastDetectedTime = now;
+
+    const code = data.codeResult.code;
+
+    // 同じコードを2回連続で読んだときだけ確定
+    if (code === lastDetectedCode) {
+        confirmCount += 1;
+    } else {
+        lastDetectedCode = code;
+        confirmCount = 1;
+    }
+
+    if (confirmCount >= 2) {
+        // 確定したのでリセット
+        lastDetectedCode = null;
+        confirmCount = 0;
+        handleDetected(code);
     }
 }
 
-/* 誤検出防止：2回連続検出で確定 */
-function onDetected(data){
-    const code = data.codeResult.code;
-    const now = Date.now();
+/* ===== スキャナ制御 ===== */
+function startScanner() {
+    if (isScanning) return;
 
-    if(code !== onDetected.lastCode){
-        onDetected.lastCode = code;
-        onDetected.lastTime = now;
-        onDetected.count = 1;
-        return;
-    }
-
-    if(now - onDetected.lastTime < 1500){
-        onDetected.count++;
-        if(onDetected.count >= 2){
-            handleDetected(data);
-            onDetected.count = 0;
-        }
-    }
-};
-onDetected.lastCode = null;
-onDetected.lastTime = 0;
-onDetected.count = 0;
-
-/* ============================
-   Quagga
-============================ */
-function startScanner(){
-    if(isScanning) return;
-    clearResult();
+    document.getElementById('result').style.display = 'none';
 
     Quagga.init({
-        inputStream:{
-            name:"Live",
-            type:"LiveStream",
-            target:document.querySelector("#interactive"),
-            constraints:{
-                facingMode:"environment",
-                width:{ideal:1280},
-                height:{ideal:720}
+        inputStream: {
+            name: "Live",
+            type: "LiveStream",
+            target: document.querySelector('#interactive'),
+            constraints: {
+                facingMode: "environment",
+                width: { ideal: 1280 },
+                height: { ideal: 720 }
             }
         },
-        decoder:{
-            readers:["code_128_reader"]
+        decoder: {
+            readers: ["code_128_reader"]
         },
-        locate:true
-    },err=>{
-        if(err){ alert("起動エラー"); return; }
+        locate: true
+    }, function(err) {
+        if (err) {
+            console.error(err);
+            alert("バーコードスキャナーの初期化に失敗しました。");
+            return;
+        }
         Quagga.start();
         isScanning = true;
-        document.getElementById("scanButton").textContent = "スキャン停止";
         Quagga.onDetected(onDetected);
+        document.getElementById('scanButton').textContent = "スキャン停止";
     });
 }
 
-function stopScanner(){
-    if(!isScanning) return;
+function stopScanner() {
+    if (!isScanning) return;
     Quagga.stop();
-    isScanning = false;
-    document.getElementById("scanButton").textContent = "スキャン開始";
     Quagga.offDetected(onDetected);
+    isScanning = false;
+    document.getElementById('scanButton').textContent = "スキャン開始";
 }
 
-/* ============================
-   印刷
-============================ */
-function printHistory(){
-    const name = document.getElementById("userName").value || "（未選択）";
-    document.getElementById("printUserName").textContent = name;
-    document.getElementById("printDateTime").textContent = nowStr();
-    window.print();
-}
+/* ===== イベント設定 ===== */
+document.getElementById('scanButton').addEventListener('click', function() {
+    if (isScanning) {
+        stopScanner();
+    } else {
+        startScanner();
+    }
+});
 
-/* ============================
-   イベント
-============================ */
-document.getElementById("scanButton").onclick = ()=>{
-    isScanning ? stopScanner() : startScanner();
-};
-
-document.getElementById("resetButton").onclick = ()=>{
-    stopScanner();
-    scanHistory = [];
+document.getElementById('resetButton').addEventListener('click', function() {
     previousProduct = null;
-    renderHistory();
-    clearResult();
-};
+    history = [];
+    updateHistoryTable();
+    document.getElementById('result').style.display = 'none';
+});
 
-document.getElementById("printButton").onclick = printHistory;
+document.getElementById('printButton').addEventListener('click', function() {
+    const nameSelect = document.getElementById('nameSelect');
+    if (!nameSelect.value) {
+        alert('印刷前に名前を選択してください。');
+        return;
+    }
+    window.print();
+});
 
-renderHistory();
-clearResult();
+document.getElementById('nameSelect').addEventListener('change', function() {
+    const name = this.value || '未選択';
+    document.getElementById('operatorName').textContent = name;
+    updateHistoryTable();
+});
+
+/* 初期表示 */
+updateHistoryTable();
 </script>
 
 </body>
