@@ -54,6 +54,8 @@
             margin-top: 20px;
             display: flex;
             gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
         }
         .button {
             padding: 15px 30px;
@@ -83,6 +85,48 @@
         }
         #resetButton:hover {
             background-color: #c82333; /* ホバー時の赤色を濃く */
+        }
+
+        /* 名前選択エリア */
+        #nameSection {
+            margin-top: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+            font-size: 1em;
+        }
+        #operatorName {
+            font-size: 1em;
+            padding: 5px 10px;
+            border-radius: 6px;
+        }
+
+        /* 印刷ビュー */
+        #printView {
+            display: none;
+            width: 100%;
+            max-width: 800px;
+            padding: 20px;
+            box-sizing: border-box;
+            color: #000;
+        }
+        #printView h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        #printView table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        #printView th, #printView td {
+            border: 1px solid #333;
+            padding: 8px;
+            text-align: left;
+        }
+        #printView th {
+            background-color: #eee;
         }
 
         /* 横向きモード用のスタイル */
@@ -128,6 +172,24 @@
             box-sizing: border-box;
             pointer-events: none; /* オーバーレイをクリックできないように */
         }
+
+        /* 印刷時のスタイル */
+        @media print {
+            body, html {
+                background-color: #ffffff !important;
+                display: block;
+            }
+            h1,
+            #interactive,
+            #result,
+            #controls,
+            #nameSection {
+                display: none !important;
+            }
+            #printView {
+                display: block !important;
+            }
+        }
     </style>
     <!-- QuaggaJSのCDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
@@ -136,9 +198,51 @@
     <h1>バーコードスキャナー</h1>
     <div id="interactive" class="viewport"></div>
     <div id="result"></div>
+
     <div id="controls">
         <button id="scanButton" class="button">スキャン開始</button>
         <button id="resetButton" class="button">リセット</button>
+        <button id="printButton" class="button">印刷</button>
+    </div>
+
+    <!-- 事前に用意した名前を選ぶエリア（必要に応じて書き換えてOK） -->
+    <div id="nameSection">
+        <label for="operatorName">名前：</label>
+        <select id="operatorName">
+            <option value="">選択してください</option>
+            <option value="岩田">岩田</option>
+            <option value="A班">A班</option>
+            <option value="B班">B班</option>
+            <option value="C班">C班</option>
+            <!-- ここに現場の名前を増やしてOK -->
+        </select>
+    </div>
+
+    <!-- 印刷専用ビュー -->
+    <div id="printView">
+        <h2>バーコード読み取り結果</h2>
+        <table>
+            <tr>
+                <th>名前</th>
+                <td id="printOperator"></td>
+            </tr>
+            <tr>
+                <th>日時</th>
+                <td id="printTimestamp"></td>
+            </tr>
+            <tr>
+                <th>ステータス</th>
+                <td id="printStatus"></td>
+            </tr>
+            <tr>
+                <th>製品</th>
+                <td id="printProduct"></td>
+            </tr>
+            <tr>
+                <th>バーコード</th>
+                <td id="printBarcode"></td>
+            </tr>
+        </table>
     </div>
 
     <script>
@@ -162,6 +266,10 @@
 
         let previousProduct = null;
         let isScanning = false;
+
+        // 最後の読み取り結果を記録するオブジェクト
+        // { timestamp, product, barcode, status }
+        let lastScanInfo = null;
 
         // 結果表示用の関数
         function showResult(message, color) {
@@ -198,34 +306,82 @@
             return productPatterns[segment] || null; // マッピングが存在すれば返す
         }
 
+        // 日時文字列を日本語ローカルで作る
+        function getTimestampString() {
+            const now = new Date();
+            return now.toLocaleString('ja-JP', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+        }
+
         // スキャン結果の処理
         function handleDetected(data) {
             const barcode = data.codeResult.code;
             console.log("検出されたバーコード:", barcode);
             const product = classifyProduct(barcode);
+            const timestamp = getTimestampString();
 
             if (product) {
+                let baseMessage = "";
+                let color = "#007BFF";
+                let status = "";
+
                 if (product === previousProduct) {
                     // 同じ商品を2回読み取った場合は赤色に変更
                     console.log("Duplicate detected:", product);
-                    showResult(`NG: ${product} を重複して読み取りました<br>${barcode}`, 'red');
+                    status = "NG（重複）";
+                    baseMessage = `NG: ${product} を重複して読み取りました<br>${barcode}`;
+                    color = "red";
                 } else {
                     if (previousProduct !== null) {
                         // 異なる商品を読み取った場合は緑色に変更
                         console.log(`Product changed from ${previousProduct} to ${product}`);
-                        showResult(`OK: ${previousProduct} → ${product}<br>${barcode}`, '#28a745'); // 緑色を鮮やかに変更
+                        status = "OK（切替）";
+                        baseMessage = `OK: ${previousProduct} → ${product}<br>${barcode}`;
+                        color = "#28a745"; // 緑色を鮮やかに変更
                     } else {
                         // 最初のスキャンの場合
                         console.log(`First scan detected: ${product}`);
-                        showResult(`検出: ${product}<br>${barcode}`, '#007BFF'); // 初期検出時は青色
+                        status = "初回検出";
+                        baseMessage = `検出: ${product}<br>${barcode}`;
+                        color = "#007BFF"; // 初期検出時は青色
                     }
                 }
+
+                // 表示メッセージにタイムスタンプを追加
+                const messageWithTime = `${baseMessage}<br><small>${timestamp}</small>`;
+                showResult(messageWithTime, color);
+
+                // 最後の結果を記録
+                lastScanInfo = {
+                    timestamp: timestamp,
+                    product: product,
+                    barcode: barcode,
+                    status: status
+                };
+
                 previousProduct = product;
                 console.log("previousProduct updated to:", previousProduct);
                 stopScanner(); // スキャン後に停止
             } else {
                 console.log("Product could not be classified for barcode:", barcode);
-                showResult(`バーコードが認識できません<br>${barcode}`, 'gray');
+                const status = "未分類";
+                const baseMessage = `バーコードが認識できません<br>${barcode}`;
+                const messageWithTime = `${baseMessage}<br><small>${timestamp}</small>`;
+                showResult(messageWithTime, 'gray');
+
+                // 未分類としても記録しておく
+                lastScanInfo = {
+                    timestamp: timestamp,
+                    product: "",
+                    barcode: barcode,
+                    status: status
+                };
             }
         }
 
@@ -303,14 +459,40 @@
         document.getElementById('resetButton').addEventListener('click', function() {
             clearResult();
             previousProduct = null;
+            lastScanInfo = null;
             console.log("previousProduct has been reset to null");
             stopScanner(); // 一度停止してからスキャンを再開
             startScanner(); // リセット後にスキャンを自動開始
         });
 
-        // 初期状態ではスキャン停止
+        // 印刷ボタンのイベントリスナー
+        document.getElementById('printButton').addEventListener('click', function() {
+            const operatorSelect = document.getElementById('operatorName');
+            const operatorName = operatorSelect.value.trim();
+
+            if (!operatorName) {
+                alert("印刷する前に名前を選択してください。");
+                return;
+            }
+
+            if (!lastScanInfo) {
+                alert("まだスキャン結果がありません。");
+                return;
+            }
+
+            // 印刷用ビューに値をセット
+            document.getElementById('printOperator').textContent = operatorName;
+            document.getElementById('printTimestamp').textContent = lastScanInfo.timestamp;
+            document.getElementById('printStatus').textContent = lastScanInfo.status;
+            document.getElementById('printProduct').textContent = lastScanInfo.product || "(未分類)";
+            document.getElementById('printBarcode').textContent = lastScanInfo.barcode;
+
+            // 印刷実行
+            window.print();
+        });
+
+        // 初期状態ではスキャン停止・表示クリア
         clearResult();
     </script>
 </body>
 </html>
-
