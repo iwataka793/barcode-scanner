@@ -30,18 +30,22 @@
             max-width: 900px;
             margin: 0 auto;
             padding: 10px 12px 24px;
+            display: flex;
+            flex-direction: column; /* 縦に並べる */
         }
 
         h1 {
             text-align: center;
             margin: 10px 0 12px;
             font-size: clamp(1.8rem, 4vw, 2.6rem);
+            order: 1;
         }
 
         /* ===== スキャン画面 ===== */
         #interactive-wrapper {
             width: 100%;
             margin: 0 auto;
+            order: 2;
         }
 
         #interactive.viewport {
@@ -86,6 +90,7 @@
             width: 100%;
             box-shadow: 0 4px 10px rgba(0,0,0,0.3);
             word-break: break-word;
+            order: 3;
         }
 
         /* ボタン行（カメラの下） */
@@ -95,6 +100,7 @@
             flex-wrap: wrap;
             justify-content: center;
             gap: 10px;
+            order: 4;
         }
 
         .button {
@@ -122,7 +128,11 @@
             background-color: #c82333;
         }
 
-        /* 名前選択 */
+        /* 名前選択＋担当者 表示ブロック */
+        #nameBlock {
+            order: 5;
+        }
+
         .name-row {
             margin-top: 12px;
             display: flex;
@@ -159,6 +169,7 @@
             border-radius: 12px;
             padding: 12px 10px 14px;
             box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+            order: 6;
         }
 
         #history-section h2 {
@@ -236,19 +247,21 @@
         <button id="printButton" class="button">印刷</button>
     </div>
 
-    <!-- 名前選択 -->
-    <div class="name-row">
-        <label for="nameSelect">名前：</label>
-        <select id="nameSelect">
-            <option value="">選択してください</option>
-            <option value="岩田">岩田</option>
-            <option value="佐藤">佐藤</option>
-            <option value="鈴木">鈴木</option>
-            <option value="田中">田中</option>
-            <option value="その他">その他</option>
-        </select>
+    <!-- 名前＋担当者 -->
+    <div id="nameBlock">
+        <div class="name-row">
+            <label for="nameSelect">名前：</label>
+            <select id="nameSelect">
+                <option value="">選択してください</option>
+                <option value="岩田">岩田</option>
+                <option value="佐藤">佐藤</option>
+                <option value="鈴木">鈴木</option>
+                <option value="田中">田中</option>
+                <option value="その他">その他</option>
+            </select>
+        </div>
+        <div id="currentOperator">担当者：<span id="currentName">未選択</span></div>
     </div>
-    <div id="currentOperator">担当者：<span id="currentName">未選択</span></div>
 
     <!-- 履歴 -->
     <section id="history-section">
@@ -265,7 +278,7 @@
                 </tr>
                 </thead>
                 <tbody>
-                <!-- ここにJSで追加 -->
+                <!-- JS で追加 -->
                 </tbody>
             </table>
         </div>
@@ -393,17 +406,14 @@
 
         if (product) {
             if (product === previousProduct) {
-                // 重複
                 msg = `NG: ${product} を重複して読み取りました<br>${barcode}`;
                 color = 'red';
                 judgmentText = 'NG(重複)';
             } else if (previousProduct !== null) {
-                // 異なる商品
                 msg = `OK: ${previousProduct} → ${product}<br>${barcode}`;
                 color = '#28a745';
                 judgmentText = 'OK(変更)';
             } else {
-                // 最初のスキャン
                 msg = `検出: ${product}<br>${barcode}`;
                 color = '#007BFF';
                 judgmentText = '検出';
@@ -417,7 +427,7 @@
 
         showResult(msg, color);
         addHistoryEntry(timestamp, judgmentText, productText, barcode);
-        stopScanner(); // 1件ごとに停止（必要ならここをコメントアウトで連続スキャン）
+        stopScanner(); // 1件ごとに停止（連続で回したいならここをコメントアウト）
     }
 
     // onDetectedのラッパー（500msデバウンス）
