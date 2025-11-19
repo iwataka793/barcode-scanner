@@ -22,6 +22,8 @@
             margin: 16px 0;
             font-size: 2rem;
         }
+
+        /* カメラビュー */
         #interactive.viewport {
             position: relative;
             width: 100%;
@@ -37,6 +39,8 @@
             height: 100%;
             object-fit: cover;
         }
+
+        /* 結果表示 */
         #result {
             margin-top: 10px;
             padding: 12px 16px;
@@ -51,6 +55,8 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.3);
             word-break: break-word;
         }
+
+        /* ボタン類 */
         #controls {
             margin-top: 12px;
             display: flex;
@@ -132,7 +138,7 @@
             background: #fafafa;
         }
 
-        /* 印刷用ヘッダ */
+        /* 印刷用ヘッダ（印刷時のみ表示） */
         #printHeader {
             display: none;
             width: 100%;
@@ -141,7 +147,7 @@
             font-size: 0.95rem;
         }
 
-        /* ガイド枠 */
+        /* スキャンエリアのガイド枠 */
         #interactive.viewport::before {
             content: "";
             position: absolute;
@@ -154,7 +160,7 @@
             pointer-events: none;
         }
 
-        /* 横向き時 */
+        /* 横向き時：カメラビューを少し大きく */
         @media (orientation: landscape) {
             #interactive.viewport {
                 height: 55vh;
@@ -207,7 +213,7 @@
         <span>名前：</span>
         <select id="userName">
             <option value="">選択してください</option>
-            <!-- ★ここに自分の名前リストを増やしてOK -->
+            <!-- ★ここに名前を好きなだけ追加してOK -->
             <option value="岩田 薫">岩田 薫</option>
             <option value="A班">A班</option>
             <option value="B班">B班</option>
@@ -240,27 +246,36 @@
     </div>
 
     <script>
+        // ==============================
         // エラーハンドリング
+        // ==============================
         window.onerror = function(message, source, lineno, colno, error) {
             const resultDiv = document.getElementById('result');
             resultDiv.style.backgroundColor = 'red';
-            resultDiv.textContent = `エラー: ${message} at ${source}:${lineno}:${colno}`;
+            resultDiv.textContent = 'エラー: ' + message + ' at ' + source + ':' + lineno + ':' + colno;
             resultDiv.style.display = 'block';
             document.body.style.backgroundColor = 'red';
-            console.error("Unhandled error:", message, source, lineno, colno, error);
+            console.error('Unhandled error:', message, source, lineno, colno, error);
         };
 
-        // 商品パターン（必要に応じて増やす）
+        // ==============================
+        // パラメータ
+        // ==============================
         const productPatterns = {
             "5863S": "X-92-122",
             "GFEYS": "PLR-2"
+            // ★ここにパターンを追加
         };
 
-        const MAX_HISTORY = 100;           // ★ここが履歴数の上限
+        const MAX_HISTORY = 100; // 履歴の最大件数
+
         let previousProduct = null;
         let isScanning = false;
-        let scanHistory = [];              // {time, status, product, barcode}
+        let scanHistory = [];   // {time, status, product, barcode}
 
+        // ==============================
+        // 共通関数
+        // ==============================
         function formatDateTime(d) {
             const pad = n => n.toString().padStart(2, '0');
             const y = d.getFullYear();
@@ -269,7 +284,7 @@
             const h = pad(d.getHours());
             const mi = pad(d.getMinutes());
             const s = pad(d.getSeconds());
-            return `${y}-${m}-${day} ${h}:${mi}:${s}`;
+            return y + '-' + m + '-' + day + ' ' + h + ':' + mi + ':' + s;
         }
 
         function showResult(message, color) {
@@ -299,7 +314,9 @@
             return productPatterns[segment] || null;
         }
 
-        // 履歴追加＆テーブル更新
+        // ==============================
+        // 履歴管理
+        // ==============================
         function addHistoryEntry(status, product, barcode) {
             const now = new Date();
             const timeStr = formatDateTime(now);
@@ -312,7 +329,7 @@
 
             scanHistory.push(entry);
 
-            // 100件を超えたら古いものから削除
+            // 上限以上になったら古いものから削除
             if (scanHistory.length > MAX_HISTORY) {
                 scanHistory.shift();
             }
@@ -321,8 +338,8 @@
 
         function renderHistoryTable() {
             const tbody = document.querySelector('#historyTable tbody');
-            tbody.innerHTML = "";
-            scanHistory.forEach((h, idx) => {
+            tbody.innerHTML = '';
+            scanHistory.forEach(function(h, idx) {
                 const tr = document.createElement('tr');
 
                 const tdNo = document.createElement('td');
@@ -350,61 +367,116 @@
             });
         }
 
+        // ==============================
+        // 検出処理
+        // ==============================
         function handleDetected(data) {
             const barcode = data.codeResult.code;
-            console.log("検出されたバーコード:", barcode);
+            console.log('検出されたバーコード:', barcode);
             const product = classifyProduct(barcode);
             const nowStr = formatDateTime(new Date());
 
             if (product) {
                 if (product === previousProduct) {
-                    showResult(`NG: ${product} を重複して読み取りました<br>${barcode}<br>${nowStr}`, 'red');
+                    // 同一品の重複
+                    showResult(
+                        'NG: ' + product + ' を重複して読み取りました<br>' +
+                        barcode + '<br>' + nowStr,
+                        'red'
+                    );
                     addHistoryEntry('NG（重複）', product, barcode);
                 } else {
                     if (previousProduct !== null) {
-                        showResult(`OK: ${previousProduct} → ${product}<br>${barcode}<br>${nowStr}`, '#28a745');
+                        // 品番切り替え
+                        showResult(
+                            'OK: ' + previousProduct + ' → ' + product + '<br>' +
+                            barcode + '<br>' + nowStr,
+                            '#28a745'
+                        );
                         addHistoryEntry('OK（切替）', product, barcode);
                     } else {
-                        showResult(`検出: ${product}<br>${barcode}<br>${nowStr}`, '#007BFF');
+                        // 初回検出
+                        showResult(
+                            '検出: ' + product + '<br>' +
+                            barcode + '<br>' + nowStr,
+                            '#007BFF'
+                        );
                         addHistoryEntry('検出', product, barcode);
                     }
                 }
                 previousProduct = product;
                 stopScanner();
             } else {
-                showResult(`バーコードが認識できません<br>${barcode}<br>${nowStr}`, 'gray');
+                // 分類できない
+                showResult(
+                    'バーコードが認識できません<br>' +
+                    barcode + '<br>' + nowStr,
+                    'gray'
+                );
                 addHistoryEntry('分類不可', '', barcode);
             }
         }
 
+        // ==============================
+        // 誤認識低減版 onDetected
+        // 同じコードを短時間で2回連続で読んだときだけ確定
+        // ==============================
         function onDetected(data) {
-            const now = Date.now();
-            if (now - onDetected.lastDetectedTime < 500) {
+            if (!isScanning) return;
+
+            const now  = Date.now();
+            const code = data.codeResult.code;
+
+            // 最初 or 前回と違うコード → 様子見
+            if (code !== onDetected.lastCode) {
+                onDetected.lastCode  = code;
+                onDetected.lastTime  = now;
+                onDetected.lastCount = 1;
+                console.log('1st detect:', code);
                 return;
             }
-            onDetected.lastDetectedTime = now;
-            handleDetected(data);
-        }
-        onDetected.lastDetectedTime = 0;
 
+            // 同じコードが一定時間内に再検出された場合だけ確定
+            if (now - onDetected.lastTime < 1500) { // 1.5秒以内
+                onDetected.lastCount++;
+                if (onDetected.lastCount >= 2) {
+                    console.log('Confirmed code:', code);
+                    handleDetected(data);
+                    onDetected.lastCode  = null;
+                    onDetected.lastCount = 0;
+                }
+            } else {
+                // 間が空きすぎたらリセットしてまた様子見
+                onDetected.lastCode  = code;
+                onDetected.lastTime  = now;
+                onDetected.lastCount = 1;
+            }
+        }
+        onDetected.lastCode  = null;
+        onDetected.lastTime  = 0;
+        onDetected.lastCount = 0;
+
+        // ==============================
+        // Quagga制御
+        // ==============================
         function startScanner() {
             if (isScanning) return;
             clearResult();
 
             Quagga.init({
                 inputStream: {
-                    name: "Live",
-                    type: "LiveStream",
+                    name: 'Live',
+                    type: 'LiveStream',
                     target: document.querySelector('#interactive'),
                     constraints: {
-                        facingMode: "environment",
-                        width: { ideal: 1280 },
+                        facingMode: 'environment',
+                        width:  { ideal: 1280 },
                         height: { ideal: 720 }
                     },
                     singleChannel: false
                 },
                 decoder: {
-                    readers: ["code_128_reader"],
+                    readers: ['code_128_reader'],
                     multiple: false
                 },
                 locate: true,
@@ -412,12 +484,12 @@
             }, function(err) {
                 if (err) {
                     console.error(err);
-                    alert("バーコードスキャナーの初期化に失敗しました。");
+                    alert('バーコードスキャナーの初期化に失敗しました。');
                     return;
                 }
                 Quagga.start();
                 isScanning = true;
-                document.getElementById('scanButton').textContent = "スキャン停止";
+                document.getElementById('scanButton').textContent = 'スキャン停止';
             });
 
             Quagga.onDetected(onDetected);
@@ -427,27 +499,31 @@
             if (!isScanning) return;
             Quagga.stop();
             isScanning = false;
-            document.getElementById('scanButton').textContent = "スキャン開始";
+            document.getElementById('scanButton').textContent = 'スキャン開始';
             Quagga.offDetected(onDetected);
         }
 
+        // ==============================
         // 印刷処理
+        // ==============================
         function printHistory() {
             if (scanHistory.length === 0) {
-                alert("スキャン履歴がありません。");
+                alert('スキャン履歴がありません。');
                 return;
             }
             const userName = document.getElementById('userName').value;
             if (!userName) {
-                const ok = confirm("名前が選択されていません。このまま印刷しますか？");
+                const ok = confirm('名前が選択されていません。このまま印刷しますか？');
                 if (!ok) return;
             }
-            document.getElementById('printUserName').textContent = userName || "（未選択）";
+            document.getElementById('printUserName').textContent = userName || '（未選択）';
             document.getElementById('printDateTime').textContent = formatDateTime(new Date());
-            window.print();   // iPhoneならAirPrintが立ち上がる
+            window.print(); // iPhoneならAirPrintが立ち上がる
         }
 
+        // ==============================
         // イベント設定
+        // ==============================
         document.getElementById('scanButton').addEventListener('click', function() {
             if (isScanning) {
                 stopScanner();
@@ -468,7 +544,7 @@
             printHistory();
         });
 
-        // 初期状態
+        // 初期描画
         clearResult();
         renderHistoryTable();
     </script>
