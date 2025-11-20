@@ -512,7 +512,7 @@
         currentNameSpan.textContent = name;
     });
 
-    // 印刷
+    // 印刷（ポップアップブロック対策付き）
     document.getElementById('printButton').addEventListener('click', function () {
         const selectedName = nameSelect.value;
         if (!selectedName) {
@@ -525,7 +525,15 @@
         }
 
         const nowStr = new Date().toLocaleString('ja-JP', { hour12: false });
+
+        // 新しいタブ／ウィンドウを開く
         const printWindow = window.open('', '_blank');
+
+        // iOS Safari などでブロックされた場合
+        if (!printWindow || !printWindow.document) {
+            alert('印刷用ウィンドウを開けませんでした。\nポップアップブロックを解除してから再度お試しください。');
+            return;
+        }
 
         let html = `
 <!DOCTYPE html>
