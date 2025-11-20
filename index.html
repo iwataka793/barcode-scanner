@@ -5,56 +5,34 @@
     <title>バーコードスキャナー</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 
+    <!-- スタイル -->
     <style>
-        * {
-            box-sizing: border-box;
-        }
-
-        html, body {
+        body {
             margin: 0;
-            padding: 0;
-            height: 100%;
             font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
             background-color: #f0f0f0;
         }
 
-        body {
-            display: flex;
-            justify-content: flex-start;
-            align-items: flex-start;
-        }
-
-        /* 中央寄せラッパー */
-        .wrapper {
-            width: 100%;
-            max-width: 900px;
+        .page {
+            max-width: 1000px;
             margin: 0 auto;
-            padding: 10px 12px 24px;
-            display: flex;
-            flex-direction: column; /* 縦に並べる */
+            padding: 16px;
+            box-sizing: border-box;
         }
 
         h1 {
             text-align: center;
-            margin: 10px 0 12px;
-            font-size: clamp(1.8rem, 4vw, 2.6rem);
-            order: 1;
+            margin: 8px 0 16px;
+            font-size: 2.2rem;
         }
 
-        /* ===== スキャン画面 ===== */
-        #interactive-wrapper {
-            width: 100%;
-            margin: 0 auto;
-            order: 2;
-        }
-
+        /* スキャナ領域 */
         #interactive.viewport {
             position: relative;
             width: 100%;
-            height: 60vh;            /* 基本の高さ */
-            max-height: 480px;
+            height: 55vh;          /* 基本の高さ */
             background: #000;
-            border-radius: 15px;
+            border-radius: 16px;
             overflow: hidden;
             box-shadow: 0 4px 10px rgba(0,0,0,0.3);
         }
@@ -65,7 +43,7 @@
             object-fit: cover;
         }
 
-        /* ガイド枠 */
+        /* スキャンガイド */
         #interactive.viewport::before {
             content: "";
             position: absolute;
@@ -73,109 +51,108 @@
             left: 8%;
             width: 84%;
             height: 60%;
-            border: 2px solid rgba(0, 255, 0, 0.7);
+            border: 3px solid rgba(0, 255, 0, 0.7);
+            box-sizing: border-box;
             pointer-events: none;
         }
 
         /* 結果表示 */
         #result {
-            margin-top: 12px;
-            padding: 14px 16px;
+            margin-top: 16px;
+            padding: 16px;
             border-radius: 10px;
             color: #fff;
-            font-size: 1.1rem;
+            font-size: 1.3rem;
             font-weight: bold;
             display: none;
             text-align: center;
             width: 100%;
+            box-sizing: border-box;
             box-shadow: 0 4px 10px rgba(0,0,0,0.3);
             word-break: break-word;
-            order: 3;
         }
 
-        /* ボタン行（カメラの下） */
+        /* ボタン群 */
         #controls {
-            margin-top: 14px;
+            margin-top: 16px;
             display: flex;
-            flex-wrap: wrap;
+            gap: 12px;
             justify-content: center;
-            gap: 10px;
-            order: 4;
+            flex-wrap: wrap;
         }
 
         .button {
-            min-width: 140px;
-            padding: 14px 26px;
-            font-size: 1.05rem;
+            padding: 14px 28px;
+            font-size: 1.1rem;
             border: none;
             border-radius: 10px;
             background-color: #007BFF;
             color: white;
             cursor: pointer;
             box-shadow: 0 4px 6px rgba(0,0,0,0.2);
-            transition: background-color 0.3s ease;
+            transition: background-color 0.2s ease;
+            white-space: nowrap;
         }
 
         .button:hover {
             background-color: #0056b3;
         }
 
-        .button-red {
+        #resetButton {
             background-color: #dc3545;
         }
-
-        .button-red:hover {
+        #resetButton:hover {
             background-color: #c82333;
         }
 
-        /* 名前選択＋担当者 表示ブロック */
-        #nameBlock {
-            order: 5;
+        /* 名前選択 */
+        .name-area {
+            margin-top: 12px;
+            padding: 10px 12px;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            font-size: 1rem;
         }
 
         .name-row {
-            margin-top: 12px;
             display: flex;
-            flex-wrap: wrap;
             align-items: center;
             gap: 8px;
-            font-size: 1rem;
-            justify-content: center;
+            flex-wrap: wrap;
         }
 
         .name-row label {
-            font-weight: bold;
+            min-width: 3em;
         }
 
-        #nameSelect {
-            min-width: 200px;
-            padding: 6px 10px;
+        #operatorSelect {
+            flex: 1;
+            padding: 6px 8px;
             font-size: 1rem;
-            border-radius: 8px;
+            border-radius: 6px;
             border: 1px solid #ccc;
-            background-color: #fff;
         }
 
-        #currentOperator {
-            margin-top: 4px;
-            text-align: center;
-            font-size: 0.95rem;
+        #operatorDisplay {
+            padding-left: 3.2em;
         }
 
         /* 履歴テーブル */
-        #history-section {
-            margin-top: 18px;
+        #historySection {
+            margin-top: 16px;
+            padding: 12px;
             background: #fff;
             border-radius: 12px;
-            padding: 12px 10px 14px;
-            box-shadow: 0 3px 6px rgba(0,0,0,0.1);
-            order: 6;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
         }
 
-        #history-section h2 {
-            margin: 4px 0 10px;
-            font-size: 1.2rem;
-            text-align: left;
+        #historySection h2 {
+            margin: 0 0 8px;
+            font-size: 1.3rem;
         }
 
         .history-table-wrapper {
@@ -189,85 +166,85 @@
             font-size: 0.9rem;
         }
 
-        thead {
-            background: #f5f5f5;
-        }
-
         th, td {
             border: 1px solid #ddd;
-            padding: 4px 6px;
-            text-align: center;
+            padding: 6px 8px;
+            text-align: left;
             white-space: nowrap;
         }
 
-        tbody tr:nth-child(even) {
-            background: #fafafa;
+        th {
+            background: #f8f8f8;
         }
 
-        /* 横向き時：カメラを少し低くして全体を収める */
+        .status-ok {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .status-ng {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        .status-info {
+            color: #007BFF;
+            font-weight: bold;
+        }
+        .status-unknown {
+            color: #666;
+            font-weight: bold;
+        }
+
+        /* スマホ縦向きで高さを少し高めに */
+        @media (orientation: portrait) {
+            #interactive.viewport {
+                height: 60vh;
+            }
+        }
+
+        /* 横向き：少し低くしても横長で見やすくする */
         @media (orientation: landscape) {
             #interactive.viewport {
                 height: 50vh;
-                max-height: 380px;
-            }
-        }
-
-        /* スマホ縦向き（狭い画面） */
-        @media (max-width: 768px) and (orientation: portrait) {
-            #interactive.viewport {
-                height: 55vh;
-            }
-            .button {
-                min-width: 120px;
-                padding: 12px 20px;
-                font-size: 0.95rem;
             }
         }
     </style>
 
-    <!-- QuaggaJS CDN -->
+    <!-- QuaggaJS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
 </head>
 <body>
-<div class="wrapper">
+<div class="page">
     <h1>バーコードスキャナー</h1>
 
-    <!-- カメラ -->
-    <div id="interactive-wrapper">
-        <div id="interactive" class="viewport"></div>
-    </div>
-
-    <!-- 判定結果 -->
-    <div id="result"></div>
+    <!-- スキャナ -->
+    <div id="interactive" class="viewport"></div>
 
     <!-- ボタン -->
     <div id="controls">
         <button id="scanButton" class="button">スキャン開始</button>
-        <button id="resetButton" class="button button-red">リセット</button>
+        <button id="resetButton" class="button">リセット</button>
         <button id="printButton" class="button">印刷</button>
     </div>
 
-    <!-- 名前＋担当者 -->
-    <div id="nameBlock">
+    <!-- 名前選択 -->
+    <div class="name-area">
         <div class="name-row">
-            <label for="nameSelect">名前：</label>
-            <select id="nameSelect">
+            <label for="operatorSelect">名前：</label>
+            <select id="operatorSelect">
                 <option value="">選択してください</option>
-                <option value="岩田">岩田</option>
-                <option value="佐藤">佐藤</option>
-                <option value="鈴木">鈴木</option>
-                <option value="田中">田中</option>
-                <option value="その他">その他</option>
             </select>
         </div>
-        <div id="currentOperator">担当者：<span id="currentName">未選択</span></div>
+        <div id="operatorDisplay">担当者：未選択</div>
     </div>
 
+    <!-- 結果表示 -->
+    <div id="result"></div>
+
     <!-- 履歴 -->
-    <section id="history-section">
+    <section id="historySection">
         <h2>スキャン履歴（最大100件）</h2>
         <div class="history-table-wrapper">
-            <table id="historyTable">
+            <table>
                 <thead>
                 <tr>
                     <th>No.</th>
@@ -277,26 +254,26 @@
                     <th>バーコード</th>
                 </tr>
                 </thead>
-                <tbody>
-                <!-- JS で追加 -->
-                </tbody>
+                <tbody id="historyBody"></tbody>
             </table>
         </div>
     </section>
 </div>
 
 <script>
-    // ===== エラーハンドリング =====
-    window.onerror = function(message, source, lineno, colno, error) {
-        const resultDiv = document.getElementById('result');
-        resultDiv.style.backgroundColor = 'red';
-        resultDiv.textContent = `エラー: ${message} at ${source}:${lineno}:${colno}`;
-        resultDiv.style.display = 'block';
-        document.body.style.backgroundColor = 'red';
-        console.error("Unhandled error:", message, source, lineno, colno, error);
-    };
+    // ===== 設定値 =====
+    const DETECTION_INTERVAL_MS = 200;   // B案：0.2秒ごとに1回だけ処理
+    const MAX_HISTORY = 100;
 
-    // ===== 商品パターン定義 =====
+    // 名前の候補（必要に応じて書き換えOK）
+    const OPERATOR_CANDIDATES = [
+        "岩田",
+        "A班長",
+        "B班長",
+        "Cオペレーター"
+    ];
+
+    // 商品データのパターン定義
     const productPatterns = {
         "5863S": "X-92-122",
         "GFEYS": "PLR-2"
@@ -305,17 +282,12 @@
 
     let previousProduct = null;
     let isScanning = false;
+    let lastDetectedTime = 0;
+    let currentOperator = "";
+    const history = [];
 
-    // 誤認識低減用
-    let lastBarcode = null;
-    let sameCount = 0;
-    const REQUIRED_SAME_COUNT = 2; // 同じ値を2回連続検出で確定
+    // ===== ヘルパー関数 =====
 
-    // 履歴（最大100件）
-    const scanHistory = [];
-    const MAX_HISTORY = 100;
-
-    // ===== 表示系 =====
     function showResult(message, color) {
         const resultDiv = document.getElementById('result');
         resultDiv.style.backgroundColor = color;
@@ -330,10 +302,9 @@
         document.body.style.backgroundColor = '#f0f0f0';
     }
 
-    // ===== バーコード処理 =====
     function extractImportantSegment(barcode) {
         if (barcode.length >= 9) {
-            return barcode.substring(4, 9); // 5文字
+            return barcode.substring(4, 9);
         }
         return null;
     }
@@ -344,102 +315,112 @@
         return productPatterns[segment] || null;
     }
 
-    function addHistoryEntry(timestamp, judgment, product, barcode) {
-        scanHistory.push({timestamp, judgment, product, barcode});
-        if (scanHistory.length > MAX_HISTORY) {
-            scanHistory.shift();
+    function addHistoryEntry(status, product, barcode) {
+        const now = new Date();
+        const timestamp = now.toLocaleString('ja-JP', { hour12: false });
+
+        history.unshift({
+            time: timestamp,
+            status,
+            product: product || "",
+            barcode: barcode || ""
+        });
+
+        if (history.length > MAX_HISTORY) {
+            history.pop();
         }
-        updateHistoryTable();
+
+        renderHistory();
     }
 
-    function updateHistoryTable() {
-        const tbody = document.querySelector('#historyTable tbody');
-        tbody.innerHTML = '';
-        scanHistory.forEach((item, index) => {
+    function renderHistory() {
+        const tbody = document.getElementById('historyBody');
+        tbody.innerHTML = "";
+
+        history.forEach((entry, index) => {
             const tr = document.createElement('tr');
-            const noTd = document.createElement('td');
-            const timeTd = document.createElement('td');
-            const judgeTd = document.createElement('td');
-            const productTd = document.createElement('td');
-            const barcodeTd = document.createElement('td');
 
-            noTd.textContent = index + 1;
-            timeTd.textContent = item.timestamp;
-            judgeTd.textContent = item.judgment;
-            productTd.textContent = item.product || '';
-            barcodeTd.textContent = item.barcode;
+            const tdNo = document.createElement('td');
+            tdNo.textContent = index + 1;
 
-            tr.appendChild(noTd);
-            tr.appendChild(timeTd);
-            tr.appendChild(judgeTd);
-            tr.appendChild(productTd);
-            tr.appendChild(barcodeTd);
+            const tdTime = document.createElement('td');
+            tdTime.textContent = entry.time;
+
+            const tdStatus = document.createElement('td');
+            tdStatus.textContent = entry.status;
+            switch (entry.status) {
+                case "OK":
+                    tdStatus.classList.add('status-ok');
+                    break;
+                case "NG":
+                    tdStatus.classList.add('status-ng');
+                    break;
+                case "検出":
+                    tdStatus.classList.add('status-info');
+                    break;
+                default:
+                    tdStatus.classList.add('status-unknown');
+                    break;
+            }
+
+            const tdProduct = document.createElement('td');
+            tdProduct.textContent = entry.product || "-";
+
+            const tdBarcode = document.createElement('td');
+            tdBarcode.textContent = entry.barcode || "-";
+
+            tr.appendChild(tdNo);
+            tr.appendChild(tdTime);
+            tr.appendChild(tdStatus);
+            tr.appendChild(tdProduct);
+            tr.appendChild(tdBarcode);
             tbody.appendChild(tr);
         });
     }
 
+    // ===== スキャン結果処理 =====
+
     function handleDetected(data) {
-        if (!data || !data.codeResult || !data.codeResult.code) return;
-
-        const rawCode = data.codeResult.code;
-
-        // 同じコードを一定回数連続検出したときだけ確定
-        if (rawCode === lastBarcode) {
-            sameCount++;
-        } else {
-            lastBarcode = rawCode;
-            sameCount = 1;
-        }
-        if (sameCount < REQUIRED_SAME_COUNT) {
-            return;
-        }
-        sameCount = 0; // 確定したのでリセット
-
-        const barcode = rawCode;
+        const barcode = data.codeResult.code;
         console.log("検出されたバーコード:", barcode);
         const product = classifyProduct(barcode);
 
-        const now = new Date();
-        const timestamp = now.toLocaleString('ja-JP', { hour12: false });
-
-        let msg, color, judgmentText, productText = product || '';
-
         if (product) {
             if (product === previousProduct) {
-                msg = `NG: ${product} を重複して読み取りました<br>${barcode}`;
-                color = 'red';
-                judgmentText = 'NG(重複)';
-            } else if (previousProduct !== null) {
-                msg = `OK: ${previousProduct} → ${product}<br>${barcode}`;
-                color = '#28a745';
-                judgmentText = 'OK(変更)';
+                // 同じ商品を連続で読んだ → NG
+                showResult(`NG: ${product} を重複して読み取りました<br>${barcode}`, 'red');
+                addHistoryEntry("NG", product, barcode);
             } else {
-                msg = `検出: ${product}<br>${barcode}`;
-                color = '#007BFF';
-                judgmentText = '検出';
+                if (previousProduct !== null) {
+                    // 異なる商品へ切り替わった → OK
+                    showResult(`OK: ${previousProduct} → ${product}<br>${barcode}`, '#28a745');
+                    addHistoryEntry("OK", product, barcode);
+                } else {
+                    // 最初のスキャン
+                    showResult(`検出: ${product}<br>${barcode}`, '#007BFF');
+                    addHistoryEntry("検出", product, barcode);
+                }
             }
             previousProduct = product;
+            stopScanner(); // スキャン1回ごとに停止
         } else {
-            msg = `バーコードが認識できません<br>${barcode}`;
-            color = 'gray';
-            judgmentText = '不明';
+            // 分類できないバーコード
+            showResult(`バーコードが認識できません<br>${barcode}`, 'gray');
+            addHistoryEntry("不明", null, barcode);
         }
-
-        showResult(msg, color);
-        addHistoryEntry(timestamp, judgmentText, productText, barcode);
-        stopScanner(); // 1件ごとに停止（連続で回したいならここをコメントアウト）
     }
 
-    // onDetectedのラッパー（500msデバウンス）
     function onDetected(data) {
         const now = Date.now();
-        if (now - onDetected.lastDetectedTime < 500) return;
-        onDetected.lastDetectedTime = now;
+        if (now - lastDetectedTime < DETECTION_INTERVAL_MS) {
+            return;
+        }
+        lastDetectedTime = now;
         handleDetected(data);
     }
-    onDetected.lastDetectedTime = 0;
 
     // ===== Quagga制御 =====
+
     function startScanner() {
         if (isScanning) return;
 
@@ -463,7 +444,7 @@
             },
             locate: true,
             numOfWorkers: navigator.hardwareConcurrency || 4
-        }, function(err) {
+        }, function (err) {
             if (err) {
                 console.error(err);
                 alert("バーコードスキャナーの初期化に失敗しました。");
@@ -485,135 +466,170 @@
         Quagga.offDetected(onDetected);
     }
 
-    // ===== イベント設定 =====
-    document.getElementById('scanButton').addEventListener('click', function () {
-        if (isScanning) {
-            stopScanner();
-        } else {
-            startScanner();
-        }
-    });
+    // ===== 印刷 =====
 
-    document.getElementById('resetButton').addEventListener('click', function () {
-        clearResult();
-        previousProduct = null;
-        lastBarcode = null;
-        sameCount = 0;
-        stopScanner();
-        startScanner();
-    });
-
-    // 名前選択
-    const nameSelect = document.getElementById('nameSelect');
-    const currentNameSpan = document.getElementById('currentName');
-
-    nameSelect.addEventListener('change', function () {
-        const name = nameSelect.value || '未選択';
-        currentNameSpan.textContent = name;
-    });
-
-    // 印刷（ポップアップブロック対策付き）
-    document.getElementById('printButton').addEventListener('click', function () {
-        const selectedName = nameSelect.value;
-        if (!selectedName) {
-            alert('印刷する前に「名前」を選択してください。');
+    function handlePrint() {
+        if (!currentOperator) {
+            alert("印刷する前に「名前」を選択してください。");
             return;
         }
-        if (scanHistory.length === 0) {
-            alert('スキャン履歴がありません。');
+        if (history.length === 0) {
+            alert("スキャン履歴がありません。");
             return;
         }
 
-        const nowStr = new Date().toLocaleString('ja-JP', { hour12: false });
-
-        // 新しいタブ／ウィンドウを開く
-        const printWindow = window.open('', '_blank');
-
-        // iOS Safari などでブロックされた場合
+        const printWindow = window.open("", "_blank");
         if (!printWindow || !printWindow.document) {
-            alert('印刷用ウィンドウを開けませんでした。\nポップアップブロックを解除してから再度お試しください。');
+            alert("ポップアップがブロックされました。ブラウザの設定を確認してください。");
             return;
         }
 
-        let html = `
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-<meta charset="UTF-8">
-<title>スキャン履歴</title>
-<style>
-body {
-    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    padding: 16px;
-    font-size: 12px;
-}
-h1 {
-    font-size: 20px;
-    margin-bottom: 8px;
-}
-p {
-    margin: 2px 0;
-}
-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 10px;
-    font-size: 11px;
-}
-th, td {
-    border: 1px solid #000;
-    padding: 3px 4px;
-    text-align: center;
-    white-space: nowrap;
-}
-thead {
-    background: #f0f0f0;
-}
-</style>
-</head>
-<body>
-<h1>バーコードスキャン履歴</h1>
-<p>担当者：${selectedName}</p>
-<p>印刷日時：${nowStr}</p>
-<table>
-<thead>
-<tr>
-  <th>No.</th>
-  <th>時刻</th>
-  <th>判定</th>
-  <th>品番</th>
-  <th>バーコード</th>
-</tr>
-</thead>
-<tbody>
-`;
+        const doc = printWindow.document;
 
-        scanHistory.forEach((item, index) => {
-            html += `
-<tr>
-  <td>${index + 1}</td>
-  <td>${item.timestamp}</td>
-  <td>${item.judgment}</td>
-  <td>${item.product || ''}</td>
-  <td>${item.barcode}</td>
-</tr>
-`;
+        const escapedOperator = currentOperator.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+        let tableRows = "";
+        history.forEach((entry, index) => {
+            tableRows += `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td>${entry.time}</td>
+                    <td>${entry.status}</td>
+                    <td>${entry.product || ""}</td>
+                    <td>${entry.barcode || ""}</td>
+                </tr>`;
         });
 
-        html += `
-</tbody>
-</table>
-</body>
-</html>`;
+        doc.open();
+        doc.write(`
+            <!DOCTYPE html>
+            <html lang="ja">
+            <head>
+                <meta charset="UTF-8">
+                <title>スキャン履歴</title>
+                <style>
+                    body {
+                        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+                        margin: 16px;
+                    }
+                    h1 {
+                        font-size: 1.6rem;
+                        margin-bottom: 4px;
+                    }
+                    .meta {
+                        margin-bottom: 12px;
+                        font-size: 0.95rem;
+                    }
+                    table {
+                        width: 100%;
+                        border-collapse: collapse;
+                        font-size: 0.9rem;
+                    }
+                    th, td {
+                        border: 1px solid #000;
+                        padding: 4px 6px;
+                        text-align: left;
+                        white-space: nowrap;
+                    }
+                    th {
+                        background: #eee;
+                    }
+                </style>
+            </head>
+            <body>
+                <h1>バーコードスキャン履歴</h1>
+                <div class="meta">
+                    担当者：${escapedOperator}<br>
+                    印刷日時：${new Date().toLocaleString('ja-JP', { hour12: false })}
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>No.</th>
+                            <th>時刻</th>
+                            <th>判定</th>
+                            <th>品番</th>
+                            <th>バーコード</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${tableRows}
+                    </tbody>
+                </table>
+            </body>
+            </html>
+        `);
+        doc.close();
 
-        printWindow.document.write(html);
-        printWindow.document.close();
-        printWindow.focus();
-        printWindow.print();
+        // iOS 対策で少し待ってから印刷
+        setTimeout(() => {
+            try {
+                printWindow.focus();
+                printWindow.print();
+            } catch (e) {
+                console.error(e);
+            }
+        }, 300);
+    }
+
+    // ===== 名前の初期化 =====
+
+    function initOperatorSelector() {
+        const select = document.getElementById('operatorSelect');
+        const display = document.getElementById('operatorDisplay');
+
+        // 選択肢を追加
+        OPERATOR_CANDIDATES.forEach(name => {
+            const opt = document.createElement('option');
+            opt.value = name;
+            opt.textContent = name;
+            select.appendChild(opt);
+        });
+
+        // 前回の選択を復元
+        const saved = localStorage.getItem('barcode_scanner_operator');
+        if (saved && OPERATOR_CANDIDATES.includes(saved)) {
+            select.value = saved;
+            currentOperator = saved;
+            display.textContent = `担当者：${saved}`;
+        }
+
+        select.addEventListener('change', () => {
+            currentOperator = select.value;
+            if (currentOperator) {
+                display.textContent = `担当者：${currentOperator}`;
+                localStorage.setItem('barcode_scanner_operator', currentOperator);
+            } else {
+                display.textContent = "担当者：未選択";
+                localStorage.removeItem('barcode_scanner_operator');
+            }
+        });
+    }
+
+    // ===== イベント設定 =====
+
+    document.addEventListener('DOMContentLoaded', () => {
+        initOperatorSelector();
+
+        document.getElementById('scanButton').addEventListener('click', () => {
+            if (isScanning) {
+                stopScanner();
+            } else {
+                startScanner();
+            }
+        });
+
+        document.getElementById('resetButton').addEventListener('click', () => {
+            clearResult();
+            previousProduct = null;
+            stopScanner();
+            startScanner();   // リセット後は自動で再開
+        });
+
+        document.getElementById('printButton').addEventListener('click', handlePrint);
+
+        clearResult();
     });
-
-    // 初期状態
-    clearResult();
 </script>
 </body>
 </html>
